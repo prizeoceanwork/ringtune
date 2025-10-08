@@ -28,7 +28,8 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserBalance(userId: string, amount: string): Promise<User>;
   updateStripeCustomerId(userId: string, customerId: string): Promise<User>;
-  
+  updateUser(userId: string, data: Partial<UpsertUser>): Promise<User>;
+
   // Competition operations
   getCompetitions(): Promise<Competition[]>;
   getCompetition(id: string): Promise<Competition | undefined>;
@@ -66,6 +67,19 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
+
+  async updateUser(userId: string, data: Partial<UpsertUser>): Promise<User> {
+  const [user] = await db
+    .update(users)
+    .set({
+      ...data,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId))
+    .returning();
+  return user;
+}
+
 
   async createUser(userData: UpsertUser): Promise<User> {
     const [user] = await db

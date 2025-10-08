@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Competition } from "@shared/schema";
+import scratchSoundFile from "../../../../attached_assets/assets_sounds_sound_scratch.mp3";
 
 interface ScratchCardProps {
   competition: Competition;
@@ -8,167 +9,263 @@ interface ScratchCardProps {
   isPurchasing: boolean;
 }
 
-export default function ScratchCard({ competition, onClose, onPurchase, isPurchasing }: ScratchCardProps) {
-  const [isScratching, setIsScratching] = useState(false);
-  const [scratchProgress, setScratchProgress] = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDemo, setIsDemo] = useState(true);
+const CSS_WIDTH = 500;
+const CSS_HEIGHT = 300;
+const AUTO_CLEAR_THRESHOLD = 0.7;
+const SAMPLE_GAP = 4;
+
+export default function ScratchCard({
+  competition,
+  onClose,
+  onPurchase,
+  isPurchasing,
+}: ScratchCardProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawingRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [percentScratched, setPercentScratched] = useState(0);
+
+  // 🎵 Add scratch sound
+  const scratchSoundRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    scratchSoundRef.current = new Audio(scratchSoundFile); // your scratch sound file
+    scratchSoundRef.current.loop = true;
+    scratchSoundRef.current.volume = 0.4; // softer volume
+    initCanvas();
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas size
-    canvas.width = 300;
-    canvas.height = 200;
-
-    // Draw scratch surface
-    ctx.fillStyle = '#999';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Add scratch text
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('SCRATCH HERE', canvas.width / 2, canvas.height / 2);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (scratchSoundRef.current) {
+        scratchSoundRef.current.pause();
+        scratchSoundRef.current.currentTime = 0;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isDemo) return;
-    setIsScratching(true);
-    scratch(e);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isScratching && isDemo) {
-      scratch(e);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsScratching(false);
-  };
-
-  const scratch = (e: React.MouseEvent) => {
+  function initCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.round(CSS_WIDTH * ratio);
+    canvas.height = Math.round(CSS_HEIGHT * ratio);
+    canvas.style.width = `${CSS_WIDTH}px`;
+    canvas.style.height = `${CSS_HEIGHT}px`;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "#999";
+    ctx.fillRect(0, 0, CSS_WIDTH, CSS_HEIGHT);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 20px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("SCRATCH HERE", CSS_WIDTH / 2, CSS_HEIGHT / 2);
+    setRevealed(false);
+    setPercentScratched(0);
+  }
+
+  function clearOverlayInstant() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stopScratchSound(); 
+    setRevealed(true);
+    setPercentScratched(100);
+  }
+
+  function scratchAt(cssX: number, cssY: number) {
+    if (revealed) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // Create scratch effect
-    ctx.globalCompositeOperation = 'destination-out';
+    const brush = 25;
+    ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
-    ctx.arc(x, y, 15, 0, 2 * Math.PI);
+    ctx.arc(cssX, cssY, brush, 0, Math.PI * 2);
     ctx.fill();
 
-    // Update scratch progress (simplified)
-    setScratchProgress(prev => Math.min(prev + 2, 100));
-  };
+    if (!rafRef.current) {
+      rafRef.current = requestAnimationFrame(() => checkPercentScratched());
+    }
+  }
 
-  const resetCard = () => {
-    setScratchProgress(0);
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+ function checkPercentScratched(forceCheck = false) {
+  rafRef.current = null;
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  const imageData = ctx.getImageData(0, 0, w, h).data;
 
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#999';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  let total = 0,
+    cleared = 0;
+  for (let y = 0; y < h; y += SAMPLE_GAP) {
+    for (let x = 0; x < w; x += SAMPLE_GAP) {
+      const alpha = imageData[(y * w + x) * 4 + 3];
+      total++;
+      if (alpha === 0) cleared++;
+    }
+  }
 
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('SCRATCH HERE', canvas.width / 2, canvas.height / 2);
-  };
+  const percent = total ? cleared / total : 0;
+  const pct = Math.round(percent * 100);
+  setPercentScratched(pct);
+
+  // ✅ Always auto-clear once threshold reached (even if still scratching)
+  if (percent >= AUTO_CLEAR_THRESHOLD && !revealed) {
+    stopScratchSound(); // stop sound immediately
+    setRevealed(true);
+    // small delay for natural feel
+    setTimeout(() => {
+      clearOverlayInstant();
+        
+    }, 300);
+  }
+}
+
+
+  // 🎵 Start sound when scratching
+ function startScratchSound() {
+  if (revealed) return; // 🧠 Don't start sound if card already revealed
+  const sound = scratchSoundRef.current;
+  if (sound && sound.paused) {
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+  }
+}
+
+  // 🎵 Stop sound when released
+  function stopScratchSound() {
+    const sound = scratchSoundRef.current;
+    if (sound && !sound.paused) {
+      sound.pause();
+    }
+  }
+
+  // Mouse handlers
+  function handleMouseDown(e: React.MouseEvent) {
+    e.preventDefault();
+    drawingRef.current = true;
+    startScratchSound();
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+    scratchAt(e.clientX - rect.left, e.clientY - rect.top);
+  }
+
+  function handleMouseMove(e: React.MouseEvent) {
+    if (!drawingRef.current) return;
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+    scratchAt(e.clientX - rect.left, e.clientY - rect.top);
+  }
+
+  function handleMouseUp() {
+  drawingRef.current = false;
+  stopScratchSound();
+  // ✅ Force one last check when user releases
+  checkPercentScratched(true);
+}
+
+  // Touch handlers
+  function handleTouchStart(e: React.TouchEvent) {
+    e.preventDefault();
+    drawingRef.current = true;
+    startScratchSound();
+    const t = e.touches[0];
+    if (!t) return;
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+    scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!drawingRef.current) return;
+    const t = e.touches[0];
+    if (!t) return;
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+    scratchAt(t.clientX - rect.left, t.clientY - rect.top);
+  }
+
+function handleTouchEnd() {
+  drawingRef.current = false;
+  stopScratchSound();
+  // ✅ Force one last check when user releases
+  checkPercentScratched(true);
+}
+
+  function resetCard() {
+    initCanvas();
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card rounded-xl border border-border p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card rounded-xl border border-border p-8 max-w-2xl w-full relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="text-center space-y-6">
-          <h2 className="text-3xl font-bold gradient-text" data-testid="heading-scratch-card">
-            SCRATCH CARD
-          </h2>
-          <p className="text-muted-foreground">
-            {competition.title}
-          </p>
-          
-          {/* Scratch Card */}
-          <div className="relative mx-auto" style={{ width: 300, height: 200 }}>
-            {/* Prize underneath */}
+          <h2 className="text-3xl font-bold gradient-text">SCRATCH CARD</h2>
+          <p className="text-muted-foreground">{competition.title}</p>
+
+          <div className="relative mx-auto" style={{ width: CSS_WIDTH, height: CSS_HEIGHT }}>
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-yellow-500 to-primary rounded-xl flex items-center justify-center">
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary-foreground mb-2">
-                  {isDemo ? "£500" : "?"}
+                  {!revealed ? "£500" : "YOU WIN £500!"}
                 </div>
                 <div className="text-lg text-primary-foreground">
-                  {isDemo ? "DEMO WIN!" : "SCRATCH TO REVEAL"}
+                  {!revealed && "SCRATCH TO REVEAL"}
                 </div>
               </div>
             </div>
-            
-            {/* Scratch surface */}
+
             <canvas
               ref={canvasRef}
-              className="absolute inset-0 rounded-xl cursor-crosshair"
+              className="absolute inset-0 rounded-xl cursor-pointer"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              data-testid="scratch-surface"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             />
           </div>
 
-          <div className="space-y-4">
-            <p className="text-lg">
-              Cost per card: <span className="text-primary font-bold">£{parseFloat(competition.ticketPrice).toFixed(2)}</span>
-            </p>
-            
-            {scratchProgress > 50 && isDemo && (
-              <div className="bg-primary/20 border border-primary rounded-lg p-4">
-                <p className="text-primary font-bold">Demo Complete!</p>
-                <p className="text-sm text-muted-foreground">Purchase a real card to win actual prizes!</p>
-              </div>
-            )}
-
-            <div className="flex gap-4 justify-center">
-              <button 
-                onClick={resetCard}
-                className="bg-muted text-muted-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
-                data-testid="button-reset-demo"
-              >
-                RESET DEMO
-              </button>
-              <button 
-                onClick={onPurchase}
-                disabled={isPurchasing}
-                className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
-                data-testid="button-buy-card"
-              >
-                {isPurchasing ? "PURCHASING..." : "BUY REAL CARD"}
-              </button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              This is a demo card. Purchase to play for real prizes!
-            </p>
+          <div className="flex gap-4 justify-center mt-6">
+            <button
+              onClick={resetCard}
+              className="bg-muted text-muted-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              RESET DEMO
+            </button>
+            <button
+              onClick={onPurchase}
+              disabled={isPurchasing}
+              className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {isPurchasing ? "PURCHASING..." : "BUY REAL CARD"}
+            </button>
           </div>
         </div>
 
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-          data-testid="button-close-scratch-card"
         >
-          <i className="fas fa-times text-xl"></i>
+          <i className="fas fa-times text-xl" />
         </button>
       </div>
     </div>

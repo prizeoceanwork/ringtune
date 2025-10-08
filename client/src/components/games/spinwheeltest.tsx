@@ -1,0 +1,285 @@
+import React, { useRef, useEffect, useState } from "react";
+import wheelcirclevideo from "../../../../attached_assets/a.mp4";
+import wheelcirclebackgroundvideo from "../../../../attached_assets/b.mp4";
+import AustonMartin from "../../../../attached_assets/spin/Aston Martin.png";
+import Audi from "../../../../attached_assets/spin/Audi.png";
+import Bentley from "../../../../attached_assets/spin/Bentley.png";
+import BMW from "../../../../attached_assets/spin/BMW.png";
+import Ferrari from "../../../../attached_assets/spin/Ferrari.png";
+import Ford from "../../../../attached_assets/spin/Ford.png";
+import Honda from "../../../../attached_assets/spin/Honda.png";
+import Jaguar from "../../../../attached_assets/spin/Jaguar.png";
+import Lamborghini from "../../../../attached_assets/spin/Lamborghini.png";
+import LandRover from "../../../../attached_assets/spin/Land Rover.png";
+import Lexus from "../../../../attached_assets/spin/Lexus.png";
+import Maserati from "../../../../attached_assets/spin/Maserati.png";
+import McLaren from "../../../../attached_assets/spin/McLaren.png";
+import MarcedesBenz from "../../../../attached_assets/spin/Mercedes-Benz.png";
+import Nissan from "../../../../attached_assets/spin/Nissan.png";
+import Porsche from "../../../../attached_assets/spin/Porsche.png";
+import RollsRoyce from "../../../../attached_assets/spin/Rolls-Royce.png";
+import Toyota from "../../../../attached_assets/spin/Toyota.png";
+import VW from "../../../../attached_assets/spin/VW.png";
+import wheelbg from "../../../../attached_assets/wheel.png"
+
+
+const SpinWheel = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [winner, setWinner] = useState<string | null>(null);
+  const [rotation, setRotation] = useState(0);
+  const [loadedImages, setLoadedImages] = useState<{
+    [key: string]: HTMLImageElement;
+  }>({});
+
+  const segments = [
+    { label: "Aston Martin", color: "#134A3C", icon: AustonMartin },
+    { label: "Audi", color: "#0CBDF8", icon: Audi },
+    { label: "Bentley", color: "#66C72D", icon: Bentley },
+    { label: "BMW", color: "#D69E1C", icon: BMW },
+    { label: "Nice Try", color: "#4B5563", icon: "❌" },
+
+    { label: "Ferrari", color: "#C2586D", icon: Ferrari },
+    { label: "Ford", color: "#190B89", icon: Ford },
+    { label: "Honda", color: "#821A93", icon: Honda },
+    { label: "Jaguar", color: "#1CC2A6", icon: Jaguar },
+    { label: "Nice Try", color: "#4B5563", icon: "❌" },
+
+    { label: "Lamborghini", color: "#F472B6", icon: Lamborghini },
+    { label: "Land Rover", color: "#9CA3AF", icon: LandRover },
+    { label: "Lexus", color: "#D97706", icon: Lexus },
+    { label: "Maserati", color: "#7C3AED", icon: Maserati },
+    { label: "McLaren", color: "#DB2777", icon: McLaren },
+    { label: "Nice Try", color: "#4B5563", icon: "❌" },
+
+    { label: "Mercedes-Benz", color: "#16A34A", icon: MarcedesBenz },
+    { label: "Nissan", color: "#DC2626", icon: Nissan },
+    { label: "Porsche", color: "#2563EB", icon: Porsche },
+    { label: "Rolls-Royce", color: "#9333EA", icon: RollsRoyce },
+    { label: "Toyota", color: "#EAB308", icon: Toyota },
+    { label: "Volkswagen", color: "#0891B2", icon: VW },
+    { label: "Nice Try", color: "#4B5563", icon: "❌" },
+  ];
+
+  // Load all images
+  useEffect(() => {
+    const loadImages = async () => {
+      const images: { [key: string]: HTMLImageElement } = {};
+
+      for (const segment of segments) {
+        // Only load actual image URLs (not emojis)
+        if (typeof segment.icon === "string" && segment.icon.endsWith(".png")) {
+          const img = new Image();
+          img.src = segment.icon;
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+          });
+          images[segment.label] = img;
+        }
+      }
+
+      setLoadedImages(images);
+    };
+
+    loadImages();
+  }, []);
+
+  const drawWheel = (angle: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const radius = Math.min(cx, cy) - 20;
+    const segAngle = (2 * Math.PI) / segments.length;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    segments.forEach((s, i) => {
+      const start = i * segAngle + angle;
+      const end = start + segAngle;
+
+      // Draw segment
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, start, end);
+      ctx.closePath();
+      ctx.fillStyle = s.color;
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw icon and text
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(start + segAngle / 2);
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#fff";
+
+      const icon = s.icon;
+      if (typeof icon === "string" && loadedImages[s.label]) {
+        const img = loadedImages[s.label];
+        const imgSize = radius * 0.14;
+        ctx.drawImage(
+          img,
+          radius * 0.75 - imgSize / 2,
+          -imgSize / 2.5,
+          imgSize,
+          imgSize
+        );
+      } else if (typeof icon === "string" && !icon.endsWith(".png")) {
+        ctx.font = `bold ${radius * 0.1}px Arial`;
+        ctx.fillText(icon, radius * 0.75, radius * 0.04);
+      } else {
+        ctx.font = `${radius * 0.04}px Arial`;
+        ctx.fillText("?", radius * 0.65, 0);
+      }
+
+      ctx.restore();
+    });
+
+    // Inner circle
+    const cRadius = radius * 0.45;
+    ctx.beginPath();
+    ctx.arc(cx, cy, cRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.97)";
+    ctx.fill();
+    ctx.strokeStyle = "#FFD700";
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // Winner text
+    if (!isSpinning && winner) {
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#fff";
+      ctx.font = `bold ${radius * 0.07}px Arial`;
+      ctx.fillText(winner, cx, cy - 20);
+    }
+  };
+
+  const getWinner = (angle: number) => {
+    const segAngle = (2 * Math.PI) / segments.length;
+    const normalized = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    const adjusted = (normalized + Math.PI / 2) % (2 * Math.PI);
+    const index = Math.floor(
+      (segments.length - adjusted / segAngle) % segments.length
+    );
+    return segments[index].label;
+  };
+
+ const spinWheel = () => {
+  if (isSpinning) return;
+  setIsSpinning(true);
+  setWinner(null);
+
+  const totalRotations = 5; // 🔁 exactly 5 full rotations
+  const segAngle = (2 * Math.PI) / segments.length;
+  const randomSegment = Math.floor(Math.random() * segments.length);
+  const finalOffset = randomSegment * segAngle + Math.random() * segAngle * 0.5; // small variation
+  const target = rotation + totalRotations * 2 * Math.PI + finalOffset;
+
+  const duration = 5000; // ⏱️ smooth 5-second spin
+  const start = performance.now();
+
+  const animate = (time: number) => {
+    const progress = Math.min((time - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out
+    const current = rotation + eased * (target - rotation);
+    drawWheel(current);
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      setRotation(target % (2 * Math.PI)); // keep rotation clean between 0–2π
+      setWinner(getWinner(target));
+      setIsSpinning(false);
+    }
+  };
+
+  requestAnimationFrame(animate);
+};
+
+
+  useEffect(() => {
+    const resize = () => {
+      const canvas = canvasRef.current;
+      if (!canvas || !canvas.parentElement) return;
+      const size = Math.min(canvas.parentElement.clientWidth, 600);
+      canvas.width = size;
+      canvas.height = size;
+      drawWheel(rotation);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [rotation, isSpinning, winner, loadedImages]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden">
+
+       <h2 className="text-3xl z-20 mb-10 font-bold  gradient-text " data-testid="heading-spin-wheel">
+            SPIN THE WHEEL
+          </h2>
+      {/* background video */}
+      <video
+        autoPlay
+        loop
+        muted
+        className="absolute top-0 left-0 w-full h-full object-cover"
+      >
+        <source src={wheelcirclebackgroundvideo} type="video/mp4" />
+      </video>
+
+      <div className="relative w-full max-w-2xl aspect-square flex items-center justify-center z-10">
+        <img
+  src={wheelbg}
+  alt="Wheel Ring"
+  className="absolute w-full h-full object-contain z-10 pointer-events-none"
+/>
+        <canvas
+          ref={canvasRef}
+          className="w-[88%] h-[88%] rounded-full "
+        />
+
+        {/* show video in center when spinning or idle (no winner) */}
+        {(!winner || isSpinning) && (
+          <video
+            autoPlay
+            loop
+            muted
+            className="absolute w-2/5 h-2/5 rounded-full object-cover"
+          >
+            <source src={wheelcirclevideo} type="video/mp4" />
+          </video>
+        )}
+
+        {/* show SPIN button only when not spinning and winner exists */}
+        {!isSpinning && (
+          <button
+            onClick={spinWheel}
+            className="absolute px-3 py-2 bottom-[300px] bg-yellow-400 rounded-[3px] hover:bg-yellow-500 text-black font-bold text-md flex items-end justify-center shadow-xl transition-all"
+          >
+            {winner ? "SPIN AGAIN" : "SPIN WHEEL"}
+          </button>
+        )}
+
+        {/* Pointer */}
+        {/* <div className="absolute top-3 left-1/2 transform -rotate-180 -translate-x-1/2 -translate-y-2 z-20">
+          <div className="w-8 h-12 bg-yellow-400 clip-triangle shadow-2xl"></div>
+        </div> */}
+      </div>
+
+      <style>{`
+        .clip-triangle {
+          clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default SpinWheel;

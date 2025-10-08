@@ -7,19 +7,22 @@ import Footer from "@/components/layout/footer";
 import { Link } from "wouter";
 
 interface OrderWithCompetition {
-  id: string;
-  competitionId: string;
-  quantity: number;
-  totalAmount: string;
-  paymentMethod: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  competition: {
+  competitions: {
     title: string;
     imageUrl: string;
   };
+  orders: {
+    id: string;
+    competitionId: string;
+    quantity: number;
+    totalAmount: string;
+    paymentMethod: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
+
 
 export default function Orders() {
   const { toast } = useToast();
@@ -28,7 +31,9 @@ export default function Orders() {
   const { data: orders = [], isLoading: ordersLoading } = useQuery<OrderWithCompetition[]>({
     queryKey: ["/api/user/orders"],
     enabled: isAuthenticated,
-  });
+  }
+);
+console.log(orders)
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -63,7 +68,6 @@ export default function Orders() {
       <div className="container mx-auto px-4 py-8">
         <div className="bg-muted text-center py-4 mb-8">
           <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <span className="text-primary">Phone Number</span>
             <span className="text-primary font-bold">Orders</span>
             <span className="text-primary">Entries</span>
             <span className="text-primary">RingTone Points</span>
@@ -115,52 +119,56 @@ export default function Orders() {
                   </thead>
                   <tbody>
                     {orders.map((order) => (
-                      <tr key={order.id} className="border-b border-border hover:bg-muted/50">
+                      <tr key={order.orders.id} className="border-b border-border hover:bg-muted/50">
                         <td className="py-4 px-4">
                           <div className="flex items-center space-x-3">
-                            {order.competition?.imageUrl && (
+                            {order.competitions?.imageUrl && (
                               <img 
-                                src={order.competition.imageUrl} 
-                                alt={order.competition.title}
+                                src={order.competitions.imageUrl} 
+                                alt={order.competitions.title}
                                 className="w-12 h-12 rounded object-cover"
                               />
                             )}
                             <div>
-                              <p className="font-medium" data-testid={`text-order-id-${order.id}`}>
-                                #{order.id.slice(-8).toUpperCase()}
-                              </p>
+                              <p className="font-medium" data-testid={`text-order-id-${order.orders.id ?? "unknown"}`}>
+  #{order.orders.id ? order.orders.id.slice(-8).toUpperCase() : "UNKNOWN"}
+</p>
+
                               <p className="text-sm text-muted-foreground line-clamp-1">
-                                {order.competition?.title || 'Competition'}
+                                {order.competitions?.title || 'Competition'}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                Quantity: {order.quantity} item{order.quantity !== 1 ? 's' : ''}
+                                Quantity: {order.orders.quantity} item{order.orders.quantity !== 1 ? 's' : ''}
                               </p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-sm text-muted-foreground" data-testid={`text-order-date-${order.id}`}>
-                          {new Date(order.createdAt).toLocaleDateString()}
+                        <td className="py-4 px-4 text-sm text-muted-foreground" data-testid={`text-order-date-${order.orders.id}`}>
+                          {new Date(order.orders.createdAt).toLocaleString()}
                         </td>
                         <td className="py-4 px-4">
                           <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                            order.status === 'completed' 
+                            order.orders.status === 'completed' 
                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                              : order.status === 'pending'
+                              : order.orders.status === 'pending'
                               ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                              : order.status === 'failed'
+                              : order.orders.status === 'failed'
                               ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
                               : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                          }`} data-testid={`text-order-status-${order.id}`}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          }`} data-testid={`text-order.orders-status-${order.orders.id}`}>
+                           {order.orders.status
+  ? order.orders.status.charAt(0).toUpperCase() + order.orders.status.slice(1)
+  : "Unknown"}
+
                           </span>
                         </td>
-                        <td className="py-4 px-4 font-semibold" data-testid={`text-order-total-${order.id}`}>
-                          £{parseFloat(order.totalAmount).toFixed(2)}
+                        <td className="py-4 px-4 font-semibold" data-testid={`text-order-total-${order.orders.id}`}>
+                          £{parseFloat(order.orders.totalAmount).toFixed(2)}
                         </td>
                         <td className="py-4 px-4">
                           <button 
                             className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-                            data-testid={`button-view-order-${order.id}`}
+                            data-testid={`button-view-order-${order.orders.id}`}
                           >
                             VIEW
                           </button>

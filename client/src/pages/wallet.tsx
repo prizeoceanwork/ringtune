@@ -79,22 +79,43 @@ export default function Wallet() {
     enabled: isAuthenticated,
   });
 
-  const topUpMutation = useMutation({
-    mutationFn: async (amount: number) => {
-      const response = await apiRequest("POST", "/api/wallet/topup", { amount });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setClientSecret(data.clientSecret);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to initiate top-up",
-        variant: "destructive",
-      });
-    },
-  });
+  // const topUpMutation = useMutation({
+  //   mutationFn: async (amount: number) => {
+  //     const response = await apiRequest("POST", "/api/wallet/topup", { amount });
+  //     return response.json();
+  //   },
+  //   onSuccess: (data) => {
+  //     setClientSecret(data.clientSecret);
+  //   },
+  //   onError: (error) => {
+  //     toast({
+  //       title: "Error",
+  //       description: error.message || "Failed to initiate top-up",
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
+
+
+ const topUpMutation = useMutation({
+  mutationFn: async (amount: number) => {
+    const response = await apiRequest("POST", "/api/wallet/topup-checkout", { amount });
+    return response.json();
+  },
+  onSuccess: (data) => {
+    if (data.url) {
+      window.location.href = data.url; // 🔥 Redirect to Stripe Checkout
+    }
+  },
+  onError: (error) => {
+    toast({
+      title: "Error",
+      description: error.message || "Failed to start checkout session",
+      variant: "destructive",
+    });
+  },
+});
+
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -147,7 +168,6 @@ export default function Wallet() {
       <div className="container mx-auto px-4 py-8">
         <div className="bg-muted text-center py-4 mb-8">
           <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <span className="text-primary">Phone Number</span>
             <Link href="/orders" className="text-primary hover:underline">Orders</Link>
             <span className="text-primary">Entries</span>
             <span className="text-primary">RingTone Points</span>
@@ -173,45 +193,43 @@ export default function Wallet() {
                 </p>
                 
                 {!clientSecret ? (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm text-muted-foreground">Top-up amount</label>
-                      <div className="flex gap-2">
-                        {[10, 25, 50, 100].map((amount) => (
-                          <button
-                            key={amount}
-                            onClick={() => setTopUpAmount(amount)}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                              topUpAmount === amount
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground'
-                            }`}
-                            data-testid={`button-amount-${amount}`}
-                          >
-                            £{amount}
-                          </button>
-                        ))}
-                      </div>
-                      <input
-                        type="number"
-                        min="5"
-                        max="1000"
-                        value={topUpAmount}
-                        onChange={(e) => setTopUpAmount(Number(e.target.value))}
-                        className="w-full bg-input border border-border text-foreground px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Enter custom amount"
-                        data-testid="input-custom-amount"
-                      />
-                    </div>
-                    <button 
-                      onClick={handleTopUp}
-                      disabled={topUpMutation.isPending}
-                      className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
-                      data-testid="button-top-up"
-                    >
-                      {topUpMutation.isPending ? "Processing..." : "TOP UP"}
-                    </button>
-                  </div>
+                <div className="space-y-4">
+  <div className="space-y-2">
+    <label className="text-sm text-muted-foreground">Top-up amount</label>
+    <div className="flex gap-2">
+      {[10, 25, 50, 100].map((amount) => (
+        <button
+          key={amount}
+          onClick={() => setTopUpAmount(amount)}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            topUpAmount === amount
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground'
+          }`}
+        >
+          £{amount}
+        </button>
+      ))}
+    </div>
+    <input
+      type="number"
+      min="5"
+      max="1000"
+      value={topUpAmount}
+      onChange={(e) => setTopUpAmount(Number(e.target.value))}
+      className="w-full bg-input border border-border text-foreground px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+      placeholder="Enter custom amount"
+    />
+  </div>
+  <button 
+    onClick={handleTopUp}
+    disabled={topUpMutation.isPending}
+    className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+  >
+    {topUpMutation.isPending ? "Processing..." : "TOP UP"}
+  </button>
+</div>
+
                 ) : (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Complete Your Payment</h3>

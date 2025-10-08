@@ -5,13 +5,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
+type RegisterForm = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  birthMonth: string;
+  birthYear: string;
+  receiveNewsletter: boolean;
+};
+
 export default function Register() {
-  const [formData, setFormData] = useState({
+    const [, setLocation] = useLocation();
+  const [formData, setFormData] = useState<RegisterForm>({
     firstName: "",
     lastName: "",
     email: "",
@@ -23,15 +34,16 @@ export default function Register() {
   const { toast } = useToast();
 
   const registerMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      return apiRequest("/api/auth/register", "POST", data);
+    mutationFn: async (data: RegisterForm) => {
+      const res = await apiRequest("POST", "/api/auth/register", data);
+      return res.json();
     },
     onSuccess: () => {
       toast({
         title: "Registration Successful",
         description: "Your account has been created. Please log in.",
       });
-      window.location.href = "/login";
+      setLocation("/login");
     },
     onError: (error: any) => {
       toast({
@@ -209,7 +221,7 @@ export default function Register() {
               {/* Register Button */}
               <Button
                 type="submit"
-                className="w-full bg-ringtone-600 hover:bg-ringtone-700 text-black font-bold"
+                className="w-full bg-yellow-600 hover:bg-ringtone-700 text-white font-bold"
                 data-testid="button-register"
                 disabled={registerMutation.isPending}
               >
@@ -222,7 +234,7 @@ export default function Register() {
                 <Link href="/login">
                   <Button
                     variant="outline"
-                    className="border-ringtone-600 text-ringtone-400 hover:bg-ringtone-600/10"
+                    className="border-ringtone-600 text-ringtone-400 hover:bg-ringtone-600/20"
                     data-testid="button-go-to-login"
                   >
                     SIGN IN

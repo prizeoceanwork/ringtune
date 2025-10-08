@@ -2,21 +2,15 @@ import express, { type Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { getSession } from "./customAuth"; 
-
+import { getSession, setupCustomAuth } from "./customAuth"; 
 
 dotenv.config();
 
 const app = express();
-
-app.set("trust proxy", 1);
-
-
+app.disable("etag"); 
+setupCustomAuth(app)
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-
-app.use(getSession());
 
 
 app.use((req, res, next) => {

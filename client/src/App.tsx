@@ -16,6 +16,10 @@ import Competition from "@/pages/competition";
 import PlayGame from "@/pages/play-game";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import spinWheel from "./pages/spinWheel";
+import WalletSuccess from "./pages/success";
+import SpinWheel from "./components/games/spinwheeltest";
+import CheckoutSuccess from "./pages/competion-success";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -44,6 +48,10 @@ function Router() {
           <Route path="/orders" component={Orders} />
           <Route path="/winners" component={PastWinners} />
           <Route path="/checkout/:orderId" component={Checkout} />
+          <Route path="/spin-wheel-test" component={spinWheel} />
+          <Route path="/spin-wheel" component={SpinWheel} />
+          <Route path="/wallet/success" component={WalletSuccess} />
+          <Route path="/success/competition" component={CheckoutSuccess} />
         </>
       )}
       <Route component={NotFound} />

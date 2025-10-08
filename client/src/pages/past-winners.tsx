@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import ScratchCard from "@/components/games/scratch-card";
+import { useState } from "react";
+import { Competition } from "@shared/schema";
+import SpinWheel from "@/components/games/spinwheeltest";
 
 interface WinnerWithDetails {
   id: string;
@@ -18,14 +22,126 @@ interface WinnerWithDetails {
 }
 
 export default function PastWinners() {
+ 
+  const dummyWinners: WinnerWithDetails[] = [
+  {
+    id: "w1",
+    prizeDescription: "iPhone 15 Pro Max",
+    prizeValue: "1199",
+    imageUrl: "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?q=80&w=800&auto=format&fit=crop",
+    createdAt: new Date().toISOString(),
+    user: { firstName: "Sarah", lastName: "Johnson" },
+    competition: { title: "Luxury Tech Giveaway" },
+  },
+  {
+    id: "w2",
+    prizeDescription: "Tesla Model 3",
+    prizeValue: "35000",
+    imageUrl: "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?q=80&w=800&auto=format&fit=crop",
+    createdAt: new Date().toISOString(),
+    user: { firstName: "James", lastName: "Miller" },
+    competition: { title: "Dream Car Competition" },
+  },
+  {
+    id: "w3",
+    prizeDescription: "MacBook Pro 16-inch",
+    prizeValue: "2499",
+    imageUrl: "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?q=80&w=800&auto=format&fit=crop",
+    createdAt: new Date().toISOString(),
+    user: { firstName: "Emma", lastName: "Wilson" },
+    competition: { title: "Work Smarter Giveaway" },
+  },
+];
+
+
+  const [showScratchCard, setShowScratchCard] = useState(false);
+    const [showSpinWheel, setShowSpinWheel] = useState(false);
   const { data: winners = [], isLoading } = useQuery<WinnerWithDetails[]>({
     queryKey: ["/api/winners"],
   });
 
+  const displayWinners = winners.length > 0 ? winners : dummyWinners;
+
+
+   const dummyCompetition : Competition = {
+    id: "comp1",
+    title: "Win a Dream Car!",
+    description: "Scratch to reveal your prize",
+    imageUrl: null,
+    type: "scratch",
+    ticketPrice: "2.50",
+    maxTickets: null,
+    soldTickets: null,
+    prizeData: {},
+    isActive: true,
+    createdAt: null,
+    updatedAt: null,
+  };
+
+
+  const dummySpinCompetition: Competition = {
+    id: "spin1",
+    title: "Spin & Win Jackpot!",
+    description: "Spin the wheel to reveal your prize!",
+    imageUrl: null,
+    type: "spin", // ✅ must be one of "scratch" | "spin" | "instant"
+    ticketPrice: "5.00",
+    maxTickets: null,
+    soldTickets: null,
+    prizeData: [
+      { amount: 10, probability: 0.3 },
+    { amount: 25, probability: 0.25 },
+    { amount: 100, probability: 0.2 },
+    { amount: 500, probability: 0.15 },
+    { amount: 100, probability: 0.05 },
+    { amount: 500, probability: 0.03 },
+    { amount: 250, probability: 0.015 },
+    { amount: 750, probability: 0.005 },
+    ],
+    isActive: true,
+    createdAt: null,
+    updatedAt: null,
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
-      
+      {/* <SpinWheel/> */}
+      {!showScratchCard && (
+        <button
+          onClick={() => setShowScratchCard(true)}
+          className="px-6 py-3 bg-primary text-white rounded-lg"
+        >
+          Open Scratch Card
+        </button>
+      )}
+
+      {showScratchCard && (
+        <ScratchCard
+          competition={dummyCompetition}
+          isPurchasing={false}
+          onPurchase={() => alert("Buying a real card…")}
+          onClose={() => setShowScratchCard(false)} // ✅ this closes it
+        />
+      )}
+
+         {!showSpinWheel && (
+        <button
+          onClick={() => setShowSpinWheel(true)}
+          className="px-6 py-3 bg-primary text-white rounded-lg"
+        >
+          Open Spin Wheel
+        </button>
+      )}
+
+      {/* {showSpinWheel && (
+        <SpinWheel
+          competition={dummySpinCompetition}
+          isPurchasing={false}
+          onPurchase={() => alert("Buying a real spin…")}
+          onClose={() => setShowSpinWheel(false)} // ✅ closes it
+        />
+      )} */}
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/5">
         <div className="container mx-auto px-4 py-16">
@@ -54,7 +170,7 @@ export default function PastWinners() {
                 </div>
               ))}
             </div>
-          ) : winners.length === 0 ? (
+          ) : displayWinners.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-muted-foreground text-lg" data-testid="text-no-winners">
                 No winners to display yet. Be the first!
@@ -62,7 +178,7 @@ export default function PastWinners() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {winners.map((winner) => (
+              {displayWinners.map((winner) => (
                 <div key={winner.id} className="bg-card rounded-xl border border-border overflow-hidden hover:transform hover:scale-105 transition-transform">
                   {winner.imageUrl && (
                     <img 

@@ -5,6 +5,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base slider styles */
+.slider-thumb {
+  @apply appearance-none w-full h-2 rounded-lg cursor-pointer;
+  background: linear-gradient(to right, #facc15 0%, #facc15 0%, #e5e7eb 0%, #e5e7eb 100%);
+}
+
+/* Thumb styling */
+.slider-thumb::-webkit-slider-thumb {
+  @apply appearance-none h-5 w-5 rounded-full bg-white border-2 border-yellow-600 cursor-pointer;
+}
+
+.slider-thumb::-moz-range-thumb {
+  @apply h-5 w-5 rounded-full bg-white border-2 border-yellow-600 cursor-pointer;
+}
+
+
 :root {
   /* Dark theme colors matching RingToneRiches design */
   --background: hsl(0 0% 6%);
