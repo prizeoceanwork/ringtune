@@ -22,6 +22,7 @@ import {
 import { nanoid } from "nanoid";
 import { db } from "./db";
 import {stripe} from "./stripe";
+import { cashflows } from "./cashflows";
 // Initialize Stripe only if keys are available
 // let stripe: Stripe | null = null;
 // if (process.env.STRIPE_SECRET_KEY) {
@@ -233,91 +234,48 @@ if (email) {
 
 app.post("/api/create-payment-intent", isAuthenticated, async (req: any, res) => {
   try {
-    if (!stripe) {
-      return res.status(500).json({
-        message: "Payment processing not configured. Please contact admin.",
-      });
-    }
-
     const { orderId, quantity } = req.body;
     const userId = req.user.id;
-
-    console.log("=== PAYMENT INTENT REQUEST ===");
-    console.log("Full req.body:", JSON.stringify(req.body, null, 2));
-    console.log("orderId:", orderId);
-    console.log("quantity:", quantity);
-    console.log("userId:", userId);
 
     if (!orderId || typeof orderId !== "string") {
       return res.status(400).json({ message: "Invalid or missing order ID" });
     }
 
-    // ✅ Get the order first
     const order = await storage.getOrder(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // ✅ Extract competitionId from order
-    const competitionId = order.competitionId;
-    console.log("Resolved competitionId from order:", competitionId);
+    const competition = await storage.getCompetition(order.competitionId);
+    if (!competition) return res.status(404).json({ message: "Competition not found" });
 
-    // ✅ Fetch competition
-    const competition = await storage.getCompetition(competitionId);
-    if (!competition) {
-      console.log("❌ Competition not found for ID:", competitionId);
-      return res.status(404).json({ message: "Competition not found" });
-    }
+    const totalAmount = parseFloat(competition.ticketPrice) * (quantity || 1);
 
-    console.log("✅ Competition found:", competition.title);
-
-    // ✅ Calculate total price (Stripe uses smallest currency unit)
-    const totalAmount = Math.round(parseFloat(competition.ticketPrice) * (quantity || 1) * 100);
-
-    console.log("Creating Stripe Checkout Session...");
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: competition.title,
-              images: competition.imageUrl ? [competition.imageUrl] : [],
-            },
-            unit_amount: Math.round(parseFloat(competition.ticketPrice) * 100),
-          },
-          quantity: quantity || 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/success/competition?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/checkout/${orderId}`,
-      metadata: {
-        orderId,
-        competitionId,
-        userId,
-        quantity: quantity.toString(),
-      },
-    });
-
-    console.log("✅ Checkout session created:", session.id);
-
-    return res.json({
-      url: session.url,
+    const session = await cashflows.createCompetitionPaymentSession(totalAmount, {
       orderId,
+      competitionId: competition.id,
+      userId,
+      quantity: quantity.toString(),
     });
-  } catch (error) {
-    console.error("❌ Error creating payment session:", error);
+
+    if (!session.hostedPageUrl) {
+      return res.status(500).json({ message: "Failed to get Cashflows checkout URL" });
+    }
+
+    res.json({
+      success: true,
+      redirectUrl: session.hostedPageUrl,
+      sessionId: session.paymentJobReference,
+    });
+  } catch (error: any) {
+    console.error("❌ Error creating Cashflows session:", error);
     res.status(500).json({
       message: "Failed to create payment session",
-      error: (error as any).message,
+      error: error.message,
     });
   }
 });
 
 
-
+// Update the payment success route
 app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
   try {
     const { sessionId } = req.body;
@@ -325,21 +283,16 @@ app.post("/api/payment-success/competition", isAuthenticated, async (req: any, r
       return res.status(400).json({ message: "Missing sessionId" });
     }
 
-    if (!stripe) {
-      return res.status(500).json({
-        message: "Payment processing not configured. Please contact admin.",
-      });
-    }
+    // Verify payment with Cashflows
+    const payment = await cashflows.getPaymentStatus(sessionId);
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-    if (session.payment_status !== "paid") {
+    if (payment.status !== "COMPLETED") {
       return res.status(400).json({ message: "Payment not completed" });
     }
 
-    const { userId, competitionId, orderId, quantity } = session.metadata || {};
-    const amount = (session.amount_total || 0) / 100;
-    const ticketQuantity = parseInt(quantity) || 1; // ✅ Get the quantity
+    const { userId, competitionId, orderId, quantity } = payment.metadata || {};
+    const amount = (payment.amount?.value || 0) / 100;
+    const ticketQuantity = parseInt(quantity) || 1;
 
     if (!userId || !orderId) {
       return res.status(400).json({ message: "Invalid payment metadata" });
@@ -355,10 +308,10 @@ app.post("/api/payment-success/competition", isAuthenticated, async (req: any, r
       userId,
       type: "purchase",
       amount: amount.toString(),
-      description: `Stripe ticket purchase for ${competitionId} - ${ticketQuantity} tickets`,
+      description: `Cashflows ticket purchase for ${competitionId} - ${ticketQuantity} tickets`,
     });
 
-    // ✅ Create multiple tickets based on quantity
+    // Create tickets
     const ticketPromises = [];
     for (let i = 0; i < ticketQuantity; i++) {
       ticketPromises.push(
@@ -370,10 +323,7 @@ app.post("/api/payment-success/competition", isAuthenticated, async (req: any, r
       );
     }
 
-    // Wait for all tickets to be created
     await Promise.all(ticketPromises);
-
-    console.log(`✅ Successfully created ${ticketQuantity} tickets for user ${userId}`);
 
     res.json({ 
       success: true, 
@@ -386,6 +336,207 @@ app.post("/api/payment-success/competition", isAuthenticated, async (req: any, r
     res.status(500).json({ message: "Failed to confirm payment" });
   }
 });
+
+// Add webhook handler for Cashflows notifications
+app.post("/api/cashflows/webhook", async (req, res) => {
+  try {
+    const event = req.body;
+    
+    // Verify webhook signature if available
+    // Cashflows may provide signature verification
+    
+    switch (event.type) {
+      case "PAYMENT_COMPLETED":
+        // Handle completed payment
+        const { orderId, userId, competitionId, quantity } = event.metadata;
+        
+        // Update order status
+        await storage.updateOrderStatus(orderId, "completed");
+        
+        // Create tickets
+        const ticketQuantity = parseInt(quantity) || 1;
+        for (let i = 0; i < ticketQuantity; i++) {
+          await storage.createTicket({
+            userId,
+            competitionId,
+            ticketNumber: nanoid(8).toUpperCase(),
+          });
+        }
+        
+        break;
+        
+      case "PAYMENT_FAILED":
+        // Handle failed payment
+        await storage.updateOrderStatus(event.metadata.orderId, "failed");
+        break;
+        
+      case "PAYMENT_CANCELLED":
+        // Handle cancelled payment
+        await storage.updateOrderStatus(event.metadata.orderId, "failed");
+        break;
+    }
+    
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("Webhook error:", error);
+    res.status(500).json({ error: "Webhook processing failed" });
+  }
+});
+// app.post("/api/create-payment-intent", isAuthenticated, async (req: any, res) => {
+//   try {
+//     if (!stripe) {
+//       return res.status(500).json({
+//         message: "Payment processing not configured. Please contact admin.",
+//       });
+//     }
+
+//     const { orderId, quantity } = req.body;
+//     const userId = req.user.id;
+
+//     console.log("=== PAYMENT INTENT REQUEST ===");
+//     console.log("Full req.body:", JSON.stringify(req.body, null, 2));
+//     console.log("orderId:", orderId);
+//     console.log("quantity:", quantity);
+//     console.log("userId:", userId);
+
+//     if (!orderId || typeof orderId !== "string") {
+//       return res.status(400).json({ message: "Invalid or missing order ID" });
+//     }
+
+//     // ✅ Get the order first
+//     const order = await storage.getOrder(orderId);
+//     if (!order) {
+//       return res.status(404).json({ message: "Order not found" });
+//     }
+
+//     // ✅ Extract competitionId from order
+//     const competitionId = order.competitionId;
+//     console.log("Resolved competitionId from order:", competitionId);
+
+//     // ✅ Fetch competition
+//     const competition = await storage.getCompetition(competitionId);
+//     if (!competition) {
+//       console.log("❌ Competition not found for ID:", competitionId);
+//       return res.status(404).json({ message: "Competition not found" });
+//     }
+
+//     console.log("✅ Competition found:", competition.title);
+
+//     // ✅ Calculate total price (Stripe uses smallest currency unit)
+//     const totalAmount = Math.round(parseFloat(competition.ticketPrice) * (quantity || 1) * 100);
+
+//     console.log("Creating Stripe Checkout Session...");
+//     const session = await stripe.checkout.sessions.create({
+//       payment_method_types: ["card"],
+//       line_items: [
+//         {
+//           price_data: {
+//             currency: "usd",
+//             product_data: {
+//               name: competition.title,
+//               images: competition.imageUrl ? [competition.imageUrl] : [],
+//             },
+//             unit_amount: Math.round(parseFloat(competition.ticketPrice) * 100),
+//           },
+//           quantity: quantity || 1,
+//         },
+//       ],
+//       mode: "payment",
+//       success_url: `${process.env.CLIENT_URL}/success/competition?session_id={CHECKOUT_SESSION_ID}`,
+//       cancel_url: `${process.env.CLIENT_URL}/checkout/${orderId}`,
+//       metadata: {
+//         orderId,
+//         competitionId,
+//         userId,
+//         quantity: quantity.toString(),
+//       },
+//     });
+
+//     console.log("✅ Checkout session created:", session.id);
+
+//     return res.json({
+//       url: session.url,
+//       orderId,
+//     });
+//   } catch (error) {
+//     console.error("❌ Error creating payment session:", error);
+//     res.status(500).json({
+//       message: "Failed to create payment session",
+//       error: (error as any).message,
+//     });
+//   }
+// });
+
+
+
+// app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
+//   try {
+//     const { sessionId } = req.body;
+//     if (!sessionId) {
+//       return res.status(400).json({ message: "Missing sessionId" });
+//     }
+
+//     if (!stripe) {
+//       return res.status(500).json({
+//         message: "Payment processing not configured. Please contact admin.",
+//       });
+//     }
+
+//     const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+//     if (session.payment_status !== "paid") {
+//       return res.status(400).json({ message: "Payment not completed" });
+//     }
+
+//     const { userId, competitionId, orderId, quantity } = session.metadata || {};
+//     const amount = (session.amount_total || 0) / 100;
+//     const ticketQuantity = parseInt(quantity) || 1; // ✅ Get the quantity
+
+//     if (!userId || !orderId) {
+//       return res.status(400).json({ message: "Invalid payment metadata" });
+//     }
+
+//     console.log(`🎫 Creating ${ticketQuantity} tickets for order ${orderId}`);
+
+//     // Update order status
+//     await storage.updateOrderStatus(orderId, "completed");
+
+//     // Record transaction
+//     await storage.createTransaction({
+//       userId,
+//       type: "purchase",
+//       amount: amount.toString(),
+//       description: `Stripe ticket purchase for ${competitionId} - ${ticketQuantity} tickets`,
+//     });
+
+//     // ✅ Create multiple tickets based on quantity
+//     const ticketPromises = [];
+//     for (let i = 0; i < ticketQuantity; i++) {
+//       ticketPromises.push(
+//         storage.createTicket({
+//           userId,
+//           competitionId,
+//           ticketNumber: nanoid(8).toUpperCase(),
+//         })
+//       );
+//     }
+
+//     // Wait for all tickets to be created
+//     await Promise.all(ticketPromises);
+
+//     console.log(`✅ Successfully created ${ticketQuantity} tickets for user ${userId}`);
+
+//     res.json({ 
+//       success: true, 
+//       competitionId, 
+//       orderId,
+//       ticketsCreated: ticketQuantity 
+//     });
+//   } catch (error) {
+//     console.error("Error confirming ticket payment:", error);
+//     res.status(500).json({ message: "Failed to confirm payment" });
+//   }
+// });
 
   // Ticket purchase route
  // ✅ Unified purchase route (wallet or Stripe fallback)
@@ -544,93 +695,77 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
   });
 
   // Game routes
-  app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { ticketId } = req.body;
+app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { ticketId, winnerPrize } = req.body;
 
-      // Get ticket and verify ownership
-      const userTickets = await storage.getUserTickets(userId);
-      const ticket = userTickets.find((t) => t.id === ticketId);
+    // Get ticket and verify ownership
+    const userTickets = await storage.getUserTickets(userId);
+    const ticket = userTickets.find((t) => t.id === ticketId);
 
-      if (!ticket) {
-        return res.status(404).json({ message: "Ticket not found" });
-      }
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
 
-      // Get competition
-      const competition = await storage.getCompetition(ticket.competitionId);
-      if (!competition || competition.type !== "spin") {
-        return res
-          .status(400)
-          .json({ message: "Invalid competition for spin wheel" });
-      }
+    // Get competition
+    const competition = await storage.getCompetition(ticket.competitionId);
+    if (!competition || competition.type !== "spin") {
+      return res
+        .status(400)
+        .json({ message: "Invalid competition for spin wheel" });
+    }
 
-      // Use the new car brand prizes
-      const prizes = (competition.prizeData as any[]) || [
-        { brand: "Rolls-Royce", amount: 1000, probability: 0.01 },
-        { brand: "Ferrari", amount: 500, probability: 0.02 },
-        { brand: "Bentley", amount: 250, probability: 0.03 },
-        { brand: "Aston Martin", amount: 150, probability: 0.04 },
-        { brand: "Lamborghini", amount: 90, probability: 0.05 },
-        { brand: "Porsche", amount: 80, probability: 0.05 },
-        { brand: "Maserati", amount: 75, probability: 0.05 },
-        { brand: "McLaren", amount: 70, probability: 0.05 },
-        { brand: "Mercedes-Benz", amount: 60, probability: 0.05 },
-        { brand: "BMW", amount: 50, probability: 0.05 },
-        { brand: "Audi", amount: "3000 Ringtones", probability: 0.1 },
-        { brand: "Land Rover", amount: "2000 Ringtones", probability: 0.1 },
-        { brand: "Jaguar", amount: "1000 Ringtones", probability: 0.1 },
-        { brand: "Lexus", amount: "850 Ringtones", probability: 0.1 },
-        { brand: "Mini", amount: "650 Ringtones", probability: 0.1 },
-        { brand: "VW", amount: "450 Ringtones", probability: 0.1 },
-        { brand: "Toyota", amount: "250 Ringtones", probability: 0.05 },
-        { brand: "Honda", amount: "150 Ringtones", probability: 0.04 },
-        { brand: "Ford", amount: "100 Ringtones", probability: 0.03 },
-        { brand: "Nissan", amount: "50 Ringtones", probability: 0.02 },
-      ];
+    // Remove the used ticket
+    await storage.deleteTicket(ticketId);
 
-      const random = Math.random();
-      let cumulativeProbability = 0;
-      let wonPrize = prizes[0];
+    // Handle prize distribution based on the prize from frontend
+    const user = await storage.getUser(userId);
+    
+    if (typeof winnerPrize.amount === "number" && winnerPrize.amount > 0) {
+      // Cash prize - add to wallet balance
+      await storage.createTransaction({
+        userId,
+        type: "prize",
+        amount: winnerPrize.amount.toString(),
+        description: `Spin wheel prize: ${winnerPrize.brand} - £${winnerPrize.amount}`,
+      });
 
-      for (const prize of prizes) {
-        cumulativeProbability += prize.probability;
-        if (random <= cumulativeProbability) {
-          wonPrize = prize;
-          break;
-        }
-      }
-
-      // Update ticket with prize - only handle cash prizes for balance
-      if (typeof wonPrize.amount === "number" && wonPrize.amount > 0) {
-        // Mark as winner and add prize transaction
+      const newBalance = parseFloat(user?.balance || "0") + winnerPrize.amount;
+      await storage.updateUserBalance(userId, newBalance.toString());
+      
+    } else if (typeof winnerPrize.amount === "string" && winnerPrize.amount.includes("Ringtones")) {
+      // Ringtone points prize - add to ringtone points
+      const ringtoneMatch = winnerPrize.amount.match(/(\d+)\s*Ringtones/);
+      if (ringtoneMatch) {
+        const points = parseInt(ringtoneMatch[1]);
+        const currentPoints = user?.ringtonePoints || 0;
+        const newPoints = currentPoints + points;
+        
+        await storage.updateUserRingtonePoints(userId, newPoints);
+        
         await storage.createTransaction({
           userId,
           type: "prize",
-          amount: wonPrize.amount.toString(),
-          description: `Spin wheel prize: ${wonPrize.brand} - £${wonPrize.amount}`,
+          amount: points.toString(),
+          description: `Spin wheel prize: ${winnerPrize.brand} - ${points} Ringtone Points`,
         });
-
-        // Update user balance
-        const user = await storage.getUser(userId);
-        const newBalance = parseFloat(user?.balance || "0") + wonPrize.amount;
-        await storage.updateUserBalance(userId, newBalance.toString());
       }
-
-      res.json({
-        success: true,
-        prize: wonPrize,
-        segment: prizes.indexOf(wonPrize),
-      });
-    } catch (error) {
-      console.error("Error playing spin wheel:", error);
-      res.status(500).json({ message: "Failed to play spin wheel" });
     }
-  });
+
+    res.json({
+      success: true,
+      prize: winnerPrize,
+    });
+  } catch (error) {
+    console.error("Error playing spin wheel:", error);
+    res.status(500).json({ message: "Failed to play spin wheel" });
+  }
+});
 
   app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { ticketId } = req.body;
 
       // Get ticket and verify ownership
@@ -694,6 +829,68 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
       res.status(500).json({ message: "Failed to play scratch card" });
     }
   });
+
+  // Convert ringtone points to wallet balance
+app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { points } = req.body;
+
+    if (!points || points <= 0) {
+      return res.status(400).json({ message: "Invalid points amount" });
+    }
+
+    const user = await storage.getUser(userId);
+    const currentPoints = user?.ringtonePoints || 0;
+
+    if (points > currentPoints) {
+      return res.status(400).json({ message: "Not enough ringtone points" });
+    }
+
+    if (points < 1000) {
+      return res.status(400).json({ message: "Minimum conversion is 1000 points" });
+    }
+
+    // Calculate euro amount (1000 points = 1 euro)
+    const euroAmount = points / 1000;
+
+    // Update ringtone points
+    const newPoints = currentPoints - points;
+    await storage.updateUserRingtonePoints(userId, newPoints);
+
+    // Update wallet balance
+    const currentBalance = parseFloat(user?.balance || "0");
+    const newBalance = currentBalance + euroAmount;
+    await storage.updateUserBalance(userId, newBalance.toString());
+
+    // Create transaction records
+    await storage.createTransaction({
+      userId,
+      type: "prize",
+      amount: `-${points}`,
+      description: `Converted ${points} ringtone points`,
+    });
+
+    await storage.createTransaction({
+      userId,
+      type: "prize",
+      amount: euroAmount.toString(),
+      description: `Received €${euroAmount} from ringtone points conversion`,
+    });
+
+    res.json({
+      success: true,
+      convertedPoints: points,
+      euroAmount: euroAmount,
+      newRingtonePoints: newPoints,
+      newBalance: newBalance
+    });
+
+  } catch (error) {
+    console.error("Error converting ringtone points:", error);
+    res.status(500).json({ message: "Failed to convert ringtone points" });
+  }
+});
 
   // User account routes
   app.get("/api/user/orders", isAuthenticated, async (req: any, res) => {
@@ -818,85 +1015,79 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
 
 
   // server/routes.ts (or similar)
-app.post("/api/wallet/topup-checkout", isAuthenticated, async (req: any, res) => {
+// wallet routes
+app.post("/api/wallet/topup-checkout", async (req, res) => {
   try {
-    if (!stripe) {
+    const { amount, userId } = req.body;
+    if (!amount) return res.status(400).json({ message: "Missing amount" });
+
+    console.log("➡️ Creating Cashflows payment session for amount:", amount);
+
+    const session = await cashflows.createPaymentSession(amount, userId);
+
+    if (!session.hostedPageUrl) {
+      console.error("❌ No hosted page URL found in response");
       return res.status(500).json({
-        message: "Payment processing not configured. Please contact admin.",
+        message: "Payment session created but no redirect URL found",
+        fullResponse: session.fullResponse,
       });
     }
 
-    const { amount } = req.body; // amount in full currency units, e.g. 25 => £25.00
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ message: "Invalid amount" });
-    }
-
-    // amount in pence: Stripe expects integer in smallest currency unit
-    const amountInPence = Math.round(amount * 100);
-
-    // create a Checkout Session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "gbp",
-            product_data: { name: `Wallet top-up £${amount}` },
-            unit_amount: amountInPence,
-          },
-          quantity: 1,
-        },
-      ],
-      // Set these to pages on your frontend
-      success_url: `${process.env.CLIENT_URL || "http://localhost:6500"}/wallet/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL || "http://localhost:6500"}/wallet/cancel`,
-      metadata: {
-        userId: req.user.id,       // attach user so you can reconcile later
-        type: "wallet_topup",
-      },
+    res.json({
+      success: true,
+      redirectUrl: session.hostedPageUrl,
+      sessionId: session.paymentJobReference,
+      message: "Payment session created successfully",
     });
-
-    // Return the URL for the hosted Stripe Checkout page
-    res.json({ url: session.url });
-  } catch (err) {
-    console.error("Error creating Checkout session:", err);
-    res.status(500).json({ message: "Failed to create checkout session" });
+  } catch (error: any) {
+    console.error("❌ Error creating payment session:", error.message);
+    res.status(500).json({
+      message: "Failed to create payment session",
+      error: error.response?.data || error.message,
+    });
   }
 });
+
+
 
 app.post("/api/wallet/confirm-topup", isAuthenticated, async (req: any, res) => {
-  const { sessionId } = req.body;
-  if (!sessionId) return res.status(400).json({ message: "Missing sessionId" });
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ message: "Missing sessionId" });
 
-  if (!stripe) {
-    return res.status(500).json({ message: "Payment processing not configured. Please contact admin." });
-  }
+    const payment = await cashflows.getPaymentStatus(sessionId);
+    const status =
+      payment?.status || payment?.checkout?.status || payment?.data?.status;
 
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
-  if (session.payment_status === "paid") {
-    const userId = session.metadata?.userId;
-    const amount = (session.amount_total || 0) / 100;
+    if (status === "SUCCESS" || status === "COMPLETED") {
+      const userId = payment?.metadata?.userId;
+      const amount = parseFloat(payment?.amountToCollect || "0");
 
-    if (!userId) {
-      return res.status(400).json({ message: "Invalid user ID" });
+      const user = await storage.getUser(userId);
+      const newBalance = (
+        parseFloat(user?.balance || "0") + amount
+      ).toString();
+      await storage.updateUserBalance(userId, newBalance);
+
+      await storage.createTransaction({
+        userId,
+        type: "deposit",
+        amount: amount.toString(),
+        description: `Cashflows top-up of £${amount}`,
+      });
+
+      return res.json({ success: true });
     }
-    const user = await storage.getUser(userId);
-    const newBalance = (parseFloat(user?.balance || "0") + amount).toString();
-    await storage.updateUserBalance(userId, newBalance);
 
-    await storage.createTransaction({
-      userId,
-      type: "deposit",
-      amount: amount.toString(),
-      description: `Stripe top-up of £${amount}`,
-    });
-
-    return res.json({ success: true });
+    res.status(400).json({ message: "Payment not completed yet" });
+  } catch (error) {
+    console.error("Error confirming Cashflows top-up:", error);
+    res.status(500).json({ message: "Failed to confirm top-up" });
   }
-
-  res.status(400).json({ message: "Payment not completed" });
 });
+
+
+
 
 
   // Past winners

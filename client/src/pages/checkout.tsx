@@ -6,12 +6,11 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function Checkout() {
   const { orderId } = useParams();
-  console.log("Order ID:", orderId);
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-   const queryParams = new URLSearchParams(window.location.search);
+  const queryParams = new URLSearchParams(window.location.search);
   const quantity = parseInt(queryParams.get("quantity") || "1");
 
   useEffect(() => {
@@ -27,21 +26,21 @@ export default function Checkout() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const handleStripeCheckout = async () => {
+  const handleCashflowsCheckout = async () => {
     try {
       const response = await apiRequest("POST", "/api/create-payment-intent", {
-        orderId, // or whatever ID you pass
+        orderId,
         quantity,
       });
 
       const data = await response.json();
-      if (data.url) {
-        // Redirect to Stripe-hosted checkout
-        window.location.href = data.url;
+      if (data.success && data.redirectUrl) {
+        // ✅ Redirect to Cashflows Hosted Page
+        window.location.href = data.redirectUrl;
       } else {
         toast({
           title: "Error",
-          description: "Failed to initialize Stripe checkout session.",
+          description: "Failed to initialize Cashflows checkout session.",
           variant: "destructive",
         });
       }
@@ -69,14 +68,16 @@ export default function Checkout() {
       <div className="bg-card rounded-xl border border-border p-8 max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Complete Your Purchase</h1>
-          <p className="text-muted-foreground">Secure payment powered by Stripe</p>
+          <p className="text-muted-foreground">
+            Secure payment powered by Cashflows
+          </p>
         </div>
 
         <button
-          onClick={handleStripeCheckout}
+          onClick={handleCashflowsCheckout}
           className="w-full bg-primary text-primary-foreground py-4 rounded-lg font-bold text-lg hover:opacity-90"
         >
-          Proceed to Stripe Checkout
+          Proceed to Payment
         </button>
 
         <div className="mt-6 text-center">

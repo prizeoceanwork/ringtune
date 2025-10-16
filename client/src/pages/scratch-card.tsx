@@ -1,4 +1,5 @@
 import ScratchCard from '@/components/games/scratch-card';
+import ScratchCardTest from '@/components/games/scratch-card-test';
 import { Competition } from '@shared/schema';
 import React, { useState } from 'react'
 
@@ -20,7 +21,7 @@ const scratchcard = () => {
     };
   return (
    <div>
-        <ScratchCard
+        <ScratchCardTest
           competition={dummyCompetition}
           isPurchasing={false}
           onPurchase={() => alert("Buying a real card…")}

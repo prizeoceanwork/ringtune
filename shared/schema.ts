@@ -38,6 +38,7 @@ export const users = pgTable("users", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   emailVerified: boolean("email_verified").default(false),
+  ringtonePoints: integer("ringtone_points").default(0),
   receiveNewsletter: boolean("receive_newsletter").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -55,6 +56,7 @@ export const competitions = pgTable("competitions", {
   soldTickets: integer("sold_tickets").default(0),
   prizeData: jsonb("prize_data"), // For storing wheel segments or scratch card prizes
   isActive: boolean("is_active").default(true),
+  ringtonePoints: integer("ringtone_points").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

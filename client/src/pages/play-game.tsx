@@ -8,6 +8,7 @@ import Footer from "@/components/layout/footer";
 import { Competition, User, Ticket } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import SpinWheel from "@/components/games/spinwheeltest";
 
 interface WheelSegment {
   brand: string;
@@ -22,9 +23,8 @@ export default function PlayGamePage() {
   const { isAuthenticated, user } = useAuth() as { isAuthenticated: boolean; user: User | null };
   const queryClient = useQueryClient();
   const [isSpinning, setIsSpinning] = useState(false);
-  const [rotation, setRotation] = useState(0);
-  const [selectedTicket, setSelectedTicket] = useState<string>("");
   const [gameResult, setGameResult] = useState<any>(null);
+  const [selectedTicketId, setSelectedTicketId] = useState<string>("");
 
   const { data: competition } = useQuery<Competition>({
     queryKey: ["/api/competitions", id],
@@ -36,61 +36,74 @@ export default function PlayGamePage() {
     enabled: isAuthenticated,
   });
 
-  // Filter tickets for this competition
+  // Filter tickets for this competition and get count
   const availableTickets = userTickets.filter(ticket => ticket.competitionId === id);
+  const ticketCount = availableTickets.length;
 
-  const playGameMutation = useMutation({
-    mutationFn: async (ticketId: string) => {
-      const endpoint = competition?.type === "spin" ? "/api/play-spin-wheel" : "/api/play-scratch-card";
-      const response = await apiRequest("POST", endpoint, { ticketId });
-      return response.json();
-    },
-    onSuccess: (result) => {
-      setGameResult(result);
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "Please login again",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 1000);
-        return;
-      }
+  // Auto-select first ticket if available and none selected
+  useEffect(() => {
+    if (availableTickets.length > 0 && !selectedTicketId) {
+      setSelectedTicketId(availableTickets[0].id);
+    }
+  }, [availableTickets, selectedTicketId]);
+
+ const playGameMutation = useMutation({
+  mutationFn: async (data: { ticketId: string; winnerPrize: any }) => {
+    const response = await apiRequest("POST", "/api/play-spin-wheel", data);
+    return response.json();
+  },
+  onSuccess: (result) => {
+    setGameResult(result);
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
+  },
+  onError: (error) => {
+    if (isUnauthorizedError(error)) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to play game",
+        title: "Unauthorized",
+        description: "Please login again",
         variant: "destructive",
       });
-    },
-  });
-
-  const handlePlay = () => {
-    if (!selectedTicket) {
-      toast({
-        title: "No Ticket Selected",
-        description: "Please select a ticket to play",
-        variant: "destructive",
-      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 1000);
       return;
     }
+    toast({
+      title: "Error",
+      description: error.message || "Failed to play game",
+      variant: "destructive",
+    });
+  },
+});
 
-    if (competition?.type === "spin") {
-      setIsSpinning(true);
-      const spinRotation = Math.random() * 360 + 1440; // At least 4 full rotations
-      setRotation(prev => prev + spinRotation);
-      
-      setTimeout(() => {
-        playGameMutation.mutate(selectedTicket);
-        setIsSpinning(false);
-      }, 3000);
+const handleSpinComplete = (winnerSegment: number, winnerLabel: string, winnerPrize: any) => {
+  const ticketToUse = availableTickets[0]; // 👈 Always use the first available ticket
+
+  if (!ticketToUse) {
+    toast({
+      title: "No Tickets Left",
+      description: "You’ve used all your spins! Purchase more tickets to play again.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  playGameMutation.mutate({
+    ticketId: ticketToUse.id,
+    winnerPrize: winnerPrize
+  });
+};
+
+
+  const handlePlayAgain = () => {
+    setGameResult(null);
+    // Remove the used ticket from selection
+    const remainingTickets = availableTickets.filter(ticket => ticket.id !== selectedTicketId);
+    if (remainingTickets.length > 0) {
+      setSelectedTicketId(remainingTickets[0].id);
     } else {
-      playGameMutation.mutate(selectedTicket);
+      setSelectedTicketId("");
     }
   };
 
@@ -163,72 +176,28 @@ export default function PlayGamePage() {
               {competition.type === "spin" ? "SPIN THE WHEEL" : "SCRATCH CARD"}
             </h1>
             <p className="text-xl text-muted-foreground">{competition.title}</p>
+            
+            {/* Ticket Count Display */}
+            <div className="bg-primary/20 rounded-lg px-6 py-3 inline-block mt-4">
+              <span className="text-lg font-semibold">
+                Available Spins: <span className="text-primary">{ticketCount}</span>
+              </span>
+            </div>
           </div>
 
           {!gameResult ? (
             <div className="space-y-8">
-              {/* Ticket Selection */}
-              <div className="bg-card rounded-xl border border-border p-6">
-                <h3 className="text-xl font-bold mb-4">Select Your Ticket</h3>
-                <div className="space-y-2">
-                  {availableTickets.map((ticket) => (
-                    <label key={ticket.id} className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="ticket"
-                        value={ticket.id}
-                        checked={selectedTicket === ticket.id}
-                        onChange={(e) => setSelectedTicket(e.target.value)}
-                        className="text-primary focus:ring-primary"
-                      />
-                      <span>Ticket #{ticket.ticketNumber}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              {/* Ticket Selection (simplified) */}
+             
 
               {/* Game Interface */}
               {competition.type === "spin" ? (
                 <div className="text-center">
-                  <div className="wheel-container mx-auto mb-8">
-                    <div 
-                      className="wheel transition-transform duration-3000 ease-out"
-                      style={{ transform: `rotate(${rotation}deg)` }}
-                    >
-                      {prizes.map((prize, index) => {
-                        const segmentAngle = 360 / prizes.length;
-                        const rotation = index * segmentAngle;
-                        const colors = [
-                          'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
-                          'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-orange-500',
-                          'bg-teal-500', 'bg-cyan-500', 'bg-lime-500', 'bg-amber-500',
-                          'bg-emerald-500', 'bg-violet-500', 'bg-rose-500', 'bg-sky-500',
-                          'bg-slate-500', 'bg-gray-500', 'bg-zinc-500', 'bg-stone-500'
-                        ];
-                        
-                        return (
-                          <div
-                            key={index}
-                            className={`wheel-segment ${colors[index % colors.length]}`}
-                            style={{
-                              transform: `rotate(${rotation}deg)`,
-                              clipPath: `polygon(0 0, ${100 - (100 / prizes.length)}% 0, 100% 100%)`,
-                            }}
-                          >
-                            <div className="segment-content">
-                              <div className="text-white font-bold text-xs">
-                                {prize.brand}
-                              </div>
-                              <div className="text-white font-bold text-xs">
-                                {typeof prize.amount === 'number' ? `£${prize.amount}` : prize.amount}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="wheel-pointer"></div>
-                  </div>
+                  <SpinWheel 
+                    onSpinComplete={handleSpinComplete}
+                    isSpinning={isSpinning}
+                    setIsSpinning={setIsSpinning}
+                  />
                 </div>
               ) : (
                 <div className="text-center">
@@ -239,17 +208,6 @@ export default function PlayGamePage() {
                   </div>
                 </div>
               )}
-
-              <div className="text-center">
-                <button 
-                  onClick={handlePlay}
-                  disabled={!selectedTicket || playGameMutation.isPending || isSpinning}
-                  className="bg-primary text-primary-foreground px-12 py-4 rounded-lg font-bold text-xl hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {playGameMutation.isPending || isSpinning ? "Playing..." : 
-                   competition.type === "spin" ? "SPIN NOW!" : "SCRATCH NOW!"}
-                </button>
-              </div>
             </div>
           ) : (
             /* Game Result */
@@ -268,17 +226,29 @@ export default function PlayGamePage() {
                         `£${gameResult.prize.amount}` : 
                         gameResult.prize.amount || gameResult.prize}
                     </p>
+                    {typeof gameResult.prize.amount === 'number' && gameResult.prize.amount > 0 && (
+                      <p className="text-green-600">Prize has been added to your wallet!</p>
+                    )}
                   </div>
                 )}
               </div>
               
               <div className="space-x-4">
-                <button 
-                  onClick={() => setLocation(`/competition/${id}`)}
-                  className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Purchase More Tickets
-                </button>
+                {ticketCount > 0 ? (
+                  <button 
+                    onClick={handlePlayAgain}
+                    className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Play Again ({ticketCount - 1} spins left)
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setLocation(`/competition/${id}`)}
+                    className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Purchase More Tickets
+                  </button>
+                )}
                 <button 
                   onClick={() => setLocation("/")}
                   className="bg-muted text-muted-foreground px-6 py-3 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"

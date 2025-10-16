@@ -5,7 +5,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function WalletSuccess() {
-  const [location, setLocation] = useSearch();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

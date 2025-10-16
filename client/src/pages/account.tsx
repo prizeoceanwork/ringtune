@@ -182,6 +182,7 @@ export default function Account() {
     user: User | null;
   };
 
+  console.log("User data:", user);
   const LogoutMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/auth/logout");
@@ -247,7 +248,9 @@ export default function Account() {
               Orders
             </Link>
             <span className="text-primary">Entries</span>
+            <Link to="/ringtune-points" className="text-primary hover:underline">
             <span className="text-primary">RingTone Points</span>
+            </Link>
             <span className="text-primary">Referral Scheme</span>
             <Link href="/wallet" className="text-primary hover:underline">
               Wallet

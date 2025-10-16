@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -35,6 +35,25 @@ export default function Orders() {
 );
 console.log(orders)
 
+// ⬇️ Add pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 15;
+
+  // ⬇️ Pagination calculations
+  const totalPages = Math.ceil(orders.length / ordersPerPage);
+  const startIndex = (currentPage - 1) * ordersPerPage;
+  const currentOrders = orders.slice(startIndex, startIndex + ordersPerPage);
+
+  // 🔄 Handle page changes
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -70,7 +89,9 @@ console.log(orders)
           <div className="flex flex-wrap justify-center gap-4 text-sm">
             <span className="text-primary font-bold">Orders</span>
             <span className="text-primary">Entries</span>
-            <span className="text-primary">RingTone Points</span>
+             <Link to="/ringtune-points" className="text-primary hover:underline">
+                      <span className="text-primary">RingTone Points</span>
+                      </Link>
             <span className="text-primary">Referral Scheme</span>
             <Link href="/wallet" className="text-primary hover:underline">Wallet</Link>
             <span className="text-primary">Address</span>
@@ -118,7 +139,7 @@ console.log(orders)
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((order) => (
+                    {currentOrders.map((order) => (
                       <tr key={order.orders.id} className="border-b border-border hover:bg-muted/50">
                         <td className="py-4 px-4">
                           <div className="flex items-center space-x-3">
@@ -177,6 +198,38 @@ console.log(orders)
                     ))}
                   </tbody>
                 </table>
+                {orders.length > ordersPerPage && (
+  <div className="flex justify-center items-center space-x-4 mt-6">
+    <button
+      onClick={handlePrevPage}
+      disabled={currentPage === 1}
+      className={`px-4 py-2 rounded-lg border ${
+        currentPage === 1
+          ? "opacity-50 cursor-not-allowed"
+          : "hover:bg-muted"
+      }`}
+    >
+      Previous
+    </button>
+
+    <span className="text-sm text-muted-foreground">
+      Page {currentPage} of {totalPages}
+    </span>
+
+    <button
+      onClick={handleNextPage}
+      disabled={currentPage === totalPages}
+      className={`px-4 py-2 rounded-lg border ${
+        currentPage === totalPages
+          ? "opacity-50 cursor-not-allowed"
+          : "hover:bg-muted"
+      }`}
+    >
+      Next
+    </button>
+  </div>
+)}
+
               </div>
             )}
           </div>

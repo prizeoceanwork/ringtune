@@ -7,71 +7,72 @@ import Footer from "@/components/layout/footer";
 import { Link } from "wouter";
 import { Transaction, User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+// import { loadStripe } from '@stripe/stripe-js';
+// import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import RingtonePoints from "./ringtunePoints";
 
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY 
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
-  : null;
+// const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY 
+//   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
+//   : null;
 
-const TopUpForm = ({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const { toast } = useToast();
-  const [isProcessing, setIsProcessing] = useState(false);
+// const TopUpForm = ({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) => {
+//   const stripe = useStripe();
+//   const elements = useElements();
+//   const { toast } = useToast();
+//   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
 
-    if (!stripe || !elements) {
-      return;
-    }
+//     if (!stripe || !elements) {
+//       return;
+//     }
 
-    setIsProcessing(true);
+//     setIsProcessing(true);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: window.location.origin + "/wallet",
-      },
-    });
+//     const { error } = await stripe.confirmPayment({
+//       elements,
+//       confirmParams: {
+//         return_url: window.location.origin + "/wallet",
+//       },
+//     });
 
-    if (error) {
-      toast({
-        title: "Payment Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Payment Successful",
-        description: "Your wallet has been topped up!",
-      });
-      onSuccess();
-    }
+//     if (error) {
+//       toast({
+//         title: "Payment Failed",
+//         description: error.message,
+//         variant: "destructive",
+//       });
+//     } else {
+//       toast({
+//         title: "Payment Successful",
+//         description: "Your wallet has been topped up!",
+//       });
+//       onSuccess();
+//     }
 
-    setIsProcessing(false);
-  };
+//     setIsProcessing(false);
+//   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement />
-      <button 
-        disabled={!stripe || isProcessing}
-        className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
-        data-testid="button-confirm-payment"
-      >
-        {isProcessing ? "Processing..." : "Confirm Payment"}
-      </button>
-    </form>
-  );
-};
+//   return (
+//     <form onSubmit={handleSubmit} className="space-y-4">
+//       <PaymentElement />
+//       <button 
+//         disabled={!stripe || isProcessing}
+//         className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+//         data-testid="button-confirm-payment"
+//       >
+//         {isProcessing ? "Processing..." : "Confirm Payment"}
+//       </button>
+//     </form>
+//   );
+// };
 
 export default function Wallet() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth() as { isAuthenticated: boolean; isLoading: boolean; user: User | null };
   const queryClient = useQueryClient();
-  const [topUpAmount, setTopUpAmount] = useState<number>(10);
+  const [topUpAmount, setTopUpAmount] = useState<string>("10");
   const [clientSecret, setClientSecret] = useState<string>("");
 
   const { data: transactions = [] } = useQuery<Transaction[]>({
@@ -103,18 +104,26 @@ export default function Wallet() {
     return response.json();
   },
   onSuccess: (data) => {
-    if (data.url) {
-      window.location.href = data.url; // 🔥 Redirect to Stripe Checkout
+    if (data.redirectUrl) {
+      window.location.href = data.redirectUrl; // Redirect user to Cashflows checkout
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to get Cashflows checkout URL",
+        variant: "destructive",
+      });
     }
   },
-  onError: (error) => {
+  onError: (error: any) => {
     toast({
       title: "Error",
       description: error.message || "Failed to start checkout session",
       variant: "destructive",
     });
+    console.error("Top-up error:", error);
   },
 });
+
 
 
   useEffect(() => {
@@ -132,7 +141,8 @@ export default function Wallet() {
   }, [isAuthenticated, isLoading, toast]);
 
   const handleTopUp = () => {
-    if (topUpAmount < 5) {
+    const amountNum = Number(topUpAmount);
+    if (amountNum < 5) {
       toast({
         title: "Invalid Amount",
         description: "Minimum top-up amount is £5",
@@ -140,7 +150,7 @@ export default function Wallet() {
       });
       return;
     }
-    topUpMutation.mutate(topUpAmount);
+    topUpMutation.mutate(amountNum);
   };
 
   const handlePaymentSuccess = () => {
@@ -170,7 +180,9 @@ export default function Wallet() {
           <div className="flex flex-wrap justify-center gap-4 text-sm">
             <Link href="/orders" className="text-primary hover:underline">Orders</Link>
             <span className="text-primary">Entries</span>
-            <span className="text-primary">RingTone Points</span>
+             <Link to="/ringtune-points" className="text-primary hover:underline">
+                      <span className="text-primary">RingTone Points</span>
+                      </Link>
             <span className="text-primary">Referral Scheme</span>
             <span className="text-primary font-bold">Wallet</span>
             <span className="text-primary">Address</span>
@@ -192,17 +204,16 @@ export default function Wallet() {
                   £{parseFloat(user?.balance || '0').toFixed(2)}
                 </p>
                 
-                {!clientSecret ? (
-                <div className="space-y-4">
+               <div className="space-y-4">
   <div className="space-y-2">
     <label className="text-sm text-muted-foreground">Top-up amount</label>
     <div className="flex gap-2">
       {[10, 25, 50, 100].map((amount) => (
         <button
           key={amount}
-          onClick={() => setTopUpAmount(amount)}
+          onClick={() => setTopUpAmount(String(amount))}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            topUpAmount === amount
+            topUpAmount === String(amount)
               ? 'bg-primary text-primary-foreground'
               : 'bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground'
           }`}
@@ -216,7 +227,7 @@ export default function Wallet() {
       min="5"
       max="1000"
       value={topUpAmount}
-      onChange={(e) => setTopUpAmount(Number(e.target.value))}
+      onChange={(e) => setTopUpAmount(e.target.value)}
       className="w-full bg-input border border-border text-foreground px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
       placeholder="Enter custom amount"
     />
@@ -226,25 +237,10 @@ export default function Wallet() {
     disabled={topUpMutation.isPending}
     className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
   >
-    {topUpMutation.isPending ? "Processing..." : "TOP UP"}
+    {topUpMutation.isPending ? "Redirecting..." : "TOP UP"}
   </button>
 </div>
 
-                ) : (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Complete Your Payment</h3>
-                    <Elements stripe={stripePromise} options={{ clientSecret }}>
-                      <TopUpForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
-                    </Elements>
-                    <button 
-                      onClick={() => setClientSecret("")}
-                      className="w-full bg-muted text-muted-foreground py-2 rounded-lg hover:bg-card transition-colors"
-                      data-testid="button-cancel-payment"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -283,7 +279,6 @@ export default function Wallet() {
           </div>
         </div>
       </div>
-
       <Footer />
     </div>
   );

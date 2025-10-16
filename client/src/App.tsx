@@ -20,6 +20,13 @@ import spinWheel from "./pages/spinWheel";
 import WalletSuccess from "./pages/success";
 import SpinWheel from "./components/games/spinwheeltest";
 import CheckoutSuccess from "./pages/competion-success";
+import RingtonePoints from "./pages/ringtunePoints";
+import ScratchCard from "./components/games/scratch-card";
+import scratchcard from "./pages/scratch-card";
+import PaymentCancelled from "./pages/cancelled";
+import PaymentFailed from "./pages/failed";
+import CheckoutFailed from "./pages/competition-failed";
+import CheckoutCancelled from "./pages/competition-cancelled";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -49,9 +56,15 @@ function Router() {
           <Route path="/winners" component={PastWinners} />
           <Route path="/checkout/:orderId" component={Checkout} />
           <Route path="/spin-wheel-test" component={spinWheel} />
-          <Route path="/spin-wheel" component={SpinWheel} />
           <Route path="/wallet/success" component={WalletSuccess} />
+          <Route path="/wallet/cancelled" component={PaymentCancelled} />
+          <Route path="/wallet/failed" component={PaymentFailed} />
           <Route path="/success/competition" component={CheckoutSuccess} />
+          <Route path="/failed" component={CheckoutFailed} />
+          <Route path="/cancelled" component={CheckoutCancelled} />
+          <Route path="/ringtune-points" component={RingtonePoints} />
+          <Route path="/scratch" component={scratchcard} />
+
         </>
       )}
       <Route component={NotFound} />

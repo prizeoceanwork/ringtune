@@ -40,7 +40,8 @@ export interface IStorage {
   createTicket(ticket: InsertTicket): Promise<Ticket>;
   getUserTickets(userId: string): Promise<Ticket[]>;
   getCompetitionTickets(competitionId: string): Promise<Ticket[]>;
-  
+  deleteTicket(ticketId: string): Promise<void>;
+
   // Order operations
   createOrder(order: InsertOrder): Promise<Order>;
   getOrder(id: string): Promise<Order | undefined>;
@@ -160,6 +161,29 @@ export class DatabaseStorage implements IStorage {
   async getCompetitionTickets(competitionId: string): Promise<Ticket[]> {
     return await db.select().from(tickets).where(eq(tickets.competitionId, competitionId));
   }
+
+
+  async deleteTicket(ticketId: string): Promise<void> {
+  await db.delete(tickets).where(eq(tickets.id, ticketId));
+}
+
+// In storage.ts
+async updateUserRingtonePoints(userId: string, points: number): Promise<void> {
+  await db.update(users)
+    .set({ ringtonePoints: points })
+    .where(eq(users.id, userId))
+    .execute();
+}
+
+async getUserRingtonePoints(userId: string): Promise<number> {
+  const user = await db.select({ ringtonePoints: users.ringtonePoints })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+    .execute();
+  
+  return user[0]?.ringtonePoints || 0;
+}
 
   // Order operations
   async createOrder(order: InsertOrder): Promise<Order> {

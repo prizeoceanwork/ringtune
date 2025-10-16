@@ -54,6 +54,7 @@ export default function CompetitionPage() {
     queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
     queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/competitions", id] });
     
   } else {
     // 💳 Stripe payment required
@@ -298,31 +299,39 @@ export default function CompetitionPage() {
                         <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-4 text-center">
                           <p className="text-green-400 font-medium">
                             ✅ You have {availableTickets.length} ticket
-                            {availableTickets.length > 1 ? "s" : ""} for this
-                            competition!
+                            {availableTickets.length > 1 ? "s" : ""} for this competition!
                           </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <button
-                            onClick={() =>
-                              setLocation(`/play/${competition.id}`)
-                            }
-                            className="bg-green-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-700 transition-colors"
-                            data-testid="button-play-now"
-                          >
-                            PLAY NOW
-                          </button>
+
+                        {competition.type === "instant" ? (
+                          // 🟢 Instant prize: no play button, just buy more
                           <button
                             onClick={handlePurchase}
                             disabled={purchaseTicketMutation.isPending}
-                            className="bg-primary text-primary-foreground py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-                            data-testid="button-purchase-more"
+                            className="w-full bg-primary text-primary-foreground py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
                           >
-                            {purchaseTicketMutation.isPending
-                              ? "Processing..."
-                              : "BUY MORE"}
+                            {purchaseTicketMutation.isPending ? "Processing..." : "BUY MORE"}
                           </button>
-                        </div>
+                        ) : (
+                          // 🌀 Spin / Scratch competitions
+                          <div className="grid grid-cols-2 gap-4">
+                            <button
+                              onClick={() => setLocation(`/play/${competition.id}`)}
+                              className="bg-green-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-700 transition-colors"
+                              data-testid="button-play-now"
+                            >
+                              PLAY NOW
+                            </button>
+                            <button
+                              onClick={handlePurchase}
+                              disabled={purchaseTicketMutation.isPending}
+                              className="bg-primary text-primary-foreground py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                              data-testid="button-purchase-more"
+                            >
+                              {purchaseTicketMutation.isPending ? "Processing..." : "BUY MORE"}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <button

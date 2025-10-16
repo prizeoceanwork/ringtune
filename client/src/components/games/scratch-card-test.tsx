@@ -1,4 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Competition } from "@shared/schema";
 import scratchSoundFile from "../../../../attached_assets/assets_sounds_sound_scratch.mp3";
 
@@ -14,7 +18,7 @@ const CSS_HEIGHT = 300;
 const AUTO_CLEAR_THRESHOLD = 0.7;
 const SAMPLE_GAP = 4;
 
-export default function ScratchCard({
+export default function ScratchCardTest({
   competition,
   onClose,
   onPurchase,
@@ -25,6 +29,37 @@ export default function ScratchCard({
   const rafRef = useRef<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [percentScratched, setPercentScratched] = useState(0);
+  const queryClient = useQueryClient();
+const { toast } = useToast();
+const { user } = useAuth();
+
+
+const rewardMutation = useMutation({
+  mutationFn: async (data: { prizeType: string; prizeValue: string; competitionId: string }) => {
+    const res = await apiRequest("POST", "/api/scratch/reward", data);
+    return res.json();
+  },
+  onSuccess: (data) => {
+    toast({
+      title: "🎉 Reward Added!",
+      description:
+        data.message ||
+        (data.prizeType === "cash"
+          ? `You’ve received ${data.prizeValue} in your wallet!`
+          : `You’ve earned ${data.prizeValue} ringtone points!`),
+    });
+
+    // Refresh user wallet/points
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+  },
+  onError: (error: any) => {
+    toast({
+      title: "Error",
+      description: error.message || "Failed to process reward",
+      variant: "destructive",
+    });
+  },
+});
 
   // 🎵 Scratch sound
   const scratchSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -37,24 +72,32 @@ export default function ScratchCard({
     ...ringtunePrizes.map((p) => ({ type: "points", value: p })),
   ];
 
-  // Pick random prize once per card load
-  const [selectedPrize] = useState(() => {
+  const [selectedPrize, setSelectedPrize] = useState(() => {
     const randomIndex = Math.floor(Math.random() * allPrizes.length);
     return allPrizes[randomIndex];
   });
 
+  // 🔹 Initialize Canvas
   useEffect(() => {
     scratchSoundRef.current = new Audio(scratchSoundFile);
     scratchSoundRef.current.loop = true;
     scratchSoundRef.current.volume = 0.4;
     initCanvas();
 
+    const handleMouseUpGlobal = () => {
+      drawingRef.current = false;
+      stopScratchSound();
+      checkPercentScratched(true);
+    };
+
+    // Handle when user releases outside canvas
+    window.addEventListener("mouseup", handleMouseUpGlobal);
+    window.addEventListener("touchend", handleMouseUpGlobal);
+
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      if (scratchSoundRef.current) {
-        scratchSoundRef.current.pause();
-        scratchSoundRef.current.currentTime = 0;
-      }
+      window.removeEventListener("mouseup", handleMouseUpGlobal);
+      window.removeEventListener("touchend", handleMouseUpGlobal);
     };
   }, []);
 
@@ -99,7 +142,7 @@ export default function ScratchCard({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const brush = 25;
+    const brush = 30;
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
     ctx.arc(cssX, cssY, brush, 0, Math.PI * 2);
@@ -160,7 +203,7 @@ export default function ScratchCard({
     }
   }
 
-  // Mouse & touch handlers
+  // 🖱 Mouse & Touch handlers
   function handleMouseDown(e: React.MouseEvent) {
     e.preventDefault();
     drawingRef.current = true;
@@ -168,16 +211,13 @@ export default function ScratchCard({
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
     scratchAt(e.clientX - rect.left, e.clientY - rect.top);
   }
+
   function handleMouseMove(e: React.MouseEvent) {
     if (!drawingRef.current) return;
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
     scratchAt(e.clientX - rect.left, e.clientY - rect.top);
   }
-  function handleMouseUp() {
-    drawingRef.current = false;
-    stopScratchSound();
-    checkPercentScratched(true);
-  }
+
   function handleTouchStart(e: React.TouchEvent) {
     e.preventDefault();
     drawingRef.current = true;
@@ -187,6 +227,7 @@ export default function ScratchCard({
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
     scratchAt(t.clientX - rect.left, t.clientY - rect.top);
   }
+
   function handleTouchMove(e: React.TouchEvent) {
     if (!drawingRef.current) return;
     const t = e.touches[0];
@@ -194,17 +235,42 @@ export default function ScratchCard({
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
     scratchAt(t.clientX - rect.left, t.clientY - rect.top);
   }
-  function handleTouchEnd() {
-    drawingRef.current = false;
-    stopScratchSound();
-    checkPercentScratched(true);
+  useEffect(() => {
+  if (percentScratched === 0 && revealed === false) {
+    // Canvas should be fully covered when reset
+    initCanvas();
   }
+}, [percentScratched, revealed]);
 
-  function resetCard() {
-    window.location.reload(); // reset random prize too
+function resetCard() {
+  stopScratchSound();
+  setRevealed(false);
+  setPercentScratched(0);
+
+  const canvas = canvasRef.current;
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      // Clear the canvas completely
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Reset composite operation
+      ctx.globalCompositeOperation = "source-over";
+      
+      // Force a new prize selection FIRST
+      const randomIndex = Math.floor(Math.random() * allPrizes.length);
+      setSelectedPrize(allPrizes[randomIndex]);
+      
+      // Then redraw the overlay
+      setTimeout(() => {
+        initCanvas();
+      }, 50);
+    }
   }
+}
 
-  // 🎉 Format prize display text
+
+  // 🎉 Prize Display
   const displayPrize =
     selectedPrize.type === "cash"
       ? `YOU WIN ${selectedPrize.value}!`
@@ -221,7 +287,7 @@ export default function ScratchCard({
       onClick={onClose}
     >
       <div
-        className="bg-card rounded-xl border border-border p-8 max-w-2xl w-full relative"
+        className="p-8 max-w-2xl w-full relative  rounded-xl shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center space-y-6">
@@ -245,37 +311,20 @@ export default function ScratchCard({
               className="absolute inset-0 rounded-xl cursor-pointer"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
             />
           </div>
 
           <div className="flex gap-4 justify-center mt-6">
             <button
-              onClick={resetCard}
-              className="bg-muted text-muted-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
-            >
-              RESET DEMO
-            </button>
-            <button
-              onClick={onPurchase}
-              disabled={isPurchasing}
               className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+              onClick={resetCard}
             >
-              {isPurchasing ? "PURCHASING..." : "BUY REAL CARD"}
+              Scratch Again
             </button>
           </div>
         </div>
-
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-        >
-          <i className="fas fa-times text-xl" />
-        </button>
       </div>
     </div>
   );
