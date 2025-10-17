@@ -8,9 +8,7 @@ import scratchSoundFile from "../../../../attached_assets/assets_sounds_sound_sc
 
 interface ScratchCardProps {
   competition: Competition;
-  onClose: () => void;
-  onPurchase: () => void;
-  isPurchasing: boolean;
+  onScratchComplete: (prize: { type: string; value: string }) => void; // ✅ add callback
 }
 
 const CSS_WIDTH = 500;
@@ -20,9 +18,8 @@ const SAMPLE_GAP = 4;
 
 export default function ScratchCardTest({
   competition,
-  onClose,
-  onPurchase,
-  isPurchasing,
+   onScratchComplete ,
+
 }: ScratchCardProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
@@ -34,32 +31,32 @@ const { toast } = useToast();
 const { user } = useAuth();
 
 
-const rewardMutation = useMutation({
-  mutationFn: async (data: { prizeType: string; prizeValue: string; competitionId: string }) => {
-    const res = await apiRequest("POST", "/api/scratch/reward", data);
-    return res.json();
-  },
-  onSuccess: (data) => {
-    toast({
-      title: "🎉 Reward Added!",
-      description:
-        data.message ||
-        (data.prizeType === "cash"
-          ? `You’ve received ${data.prizeValue} in your wallet!`
-          : `You’ve earned ${data.prizeValue} ringtone points!`),
-    });
+// const rewardMutation = useMutation({
+//   mutationFn: async (data: { prizeType: string; prizeValue: string; competitionId: string }) => {
+//     const res = await apiRequest("POST", "/api/scratch/reward", data);
+//     return res.json();
+//   },
+//   onSuccess: (data) => {
+//     toast({
+//       title: "🎉 Reward Added!",
+//       description:
+//         data.message ||
+//         (data.prizeType === "cash"
+//           ? `You’ve received ${data.prizeValue} in your wallet!`
+//           : `You’ve earned ${data.prizeValue} ringtone points!`),
+//     });
 
-    // Refresh user wallet/points
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-  },
-  onError: (error: any) => {
-    toast({
-      title: "Error",
-      description: error.message || "Failed to process reward",
-      variant: "destructive",
-    });
-  },
-});
+//     // Refresh user wallet/points
+//     queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+//   },
+//   onError: (error: any) => {
+//     toast({
+//       title: "Error",
+//       description: error.message || "Failed to process reward",
+//       variant: "destructive",
+//     });
+//   },
+// });
 
   // 🎵 Scratch sound
   const scratchSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -154,38 +151,41 @@ const rewardMutation = useMutation({
   }
 
   function checkPercentScratched(forceCheck = false) {
-    rafRef.current = null;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  rafRef.current = null;
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
-    const w = canvas.width;
-    const h = canvas.height;
-    const imageData = ctx.getImageData(0, 0, w, h).data;
+  const w = canvas.width;
+  const h = canvas.height;
+  const imageData = ctx.getImageData(0, 0, w, h).data;
 
-    let total = 0,
-      cleared = 0;
-    for (let y = 0; y < h; y += SAMPLE_GAP) {
-      for (let x = 0; x < w; x += SAMPLE_GAP) {
-        const alpha = imageData[(y * w + x) * 4 + 3];
-        total++;
-        if (alpha === 0) cleared++;
-      }
-    }
-
-    const percent = total ? cleared / total : 0;
-    const pct = Math.round(percent * 100);
-    setPercentScratched(pct);
-
-    if (percent >= AUTO_CLEAR_THRESHOLD && !revealed) {
-      stopScratchSound();
-      setRevealed(true);
-      setTimeout(() => {
-        clearOverlayInstant();
-      }, 300);
+  let total = 0, cleared = 0;
+  for (let y = 0; y < h; y += SAMPLE_GAP) {
+    for (let x = 0; x < w; x += SAMPLE_GAP) {
+      const alpha = imageData[(y * w + x) * 4 + 3];
+      total++;
+      if (alpha === 0) cleared++;
     }
   }
+
+  const percent = total ? cleared / total : 0;
+  const pct = Math.round(percent * 100);
+  setPercentScratched(pct);
+
+  if (percent >= AUTO_CLEAR_THRESHOLD && !revealed) {
+    stopScratchSound();
+    setRevealed(true);
+    setTimeout(() => {
+      clearOverlayInstant();
+
+      // ✅ Trigger prize logic after reveal
+      onScratchComplete(selectedPrize);
+    }, 300);
+  }
+}
+
 
   function startScratchSound() {
     if (revealed) return;
@@ -283,16 +283,13 @@ function resetCard() {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      className=" flex items-center justify-center  p-4"
     >
       <div
         className="p-8 max-w-2xl w-full relative  rounded-xl shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center space-y-6">
-          <h2 className="text-3xl font-bold gradient-text">SCRATCH CARD</h2>
-          <p className="text-muted-foreground">{competition.title}</p>
 
           <div className="relative mx-auto" style={{ width: CSS_WIDTH, height: CSS_HEIGHT }}>
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-yellow-500 to-primary rounded-xl flex items-center justify-center">
@@ -329,3 +326,5 @@ function resetCard() {
     </div>
   );
 }
+
+

@@ -763,72 +763,78 @@ app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
   }
 });
 
-  app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { ticketId } = req.body;
+app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { winnerPrize } = req.body;
 
-      // Get ticket and verify ownership
-      const userTickets = await storage.getUserTickets(userId);
-      const ticket = userTickets.find((t) => t.id === ticketId);
+const userTickets = await storage.getUserTickets(userId);
+if (!userTickets || userTickets.length === 0) {
+  return res.status(400).json({ success: false, message: "No tickets available" });
+}
 
-      if (!ticket) {
-        return res.status(404).json({ message: "Ticket not found" });
-      }
+// ✅ Find a ticket linked to a scratch competition
+let ticket;
+for (const t of userTickets) {
+  const comp = await storage.getCompetition(t.competitionId);
+  if (comp && comp.type === "scratch") {
+    ticket = t;
+    break;
+  }
+}
 
-      // Get competition
-      const competition = await storage.getCompetition(ticket.competitionId);
-      if (!competition || competition.type !== "scratch") {
-        return res
-          .status(400)
-          .json({ message: "Invalid competition for scratch card" });
-      }
+if (!ticket) {
+  return res.status(400).json({ success: false, message: "No scratch card tickets available" });
+}
 
-      // Simulate scratch result
-      const prizes = [0, 10, 25, 50, 100, 500, 1000, 5000, 22000];
-      const winProbability = 0.15; // 15% chance to win
-      const isWinner = Math.random() < winProbability;
+const competition = await storage.getCompetition(ticket.competitionId);
 
-      let wonAmount = 0;
-      if (isWinner) {
-        // Weight smaller prizes more heavily
-        const weights = [0, 0.4, 0.3, 0.15, 0.08, 0.04, 0.02, 0.009, 0.001];
-        const random = Math.random();
-        let cumulativeWeight = 0;
+    if (!competition || competition.type !== "scratch") {
+      return res.status(400).json({ message: "Invalid competition for scratch card" });
+    }
 
-        for (let i = 1; i < prizes.length; i++) {
-          cumulativeWeight += weights[i];
-          if (random <= cumulativeWeight) {
-            wonAmount = prizes[i];
-            break;
-          }
-        }
-      }
+    // Remove the used ticket
+    await storage.deleteTicket(ticket.id);
 
-      // Update ticket and user balance if won
-      if (wonAmount > 0) {
+    // Handle prize distribution based on the prize from frontend
+    const user = await storage.getUser(userId);
+
+    if (winnerPrize.type === "cash" && winnerPrize.value) {
+      const amount = parseFloat(winnerPrize.value.replace(/[^0-9.]/g, ""));
+      if (amount > 0) {
         await storage.createTransaction({
           userId,
           type: "prize",
-          amount: wonAmount.toString(),
-          description: `Scratch card prize: £${wonAmount}`,
+          amount: amount.toString(),
+          description: `Scratch card prize: £${amount}`,
         });
 
-        const user = await storage.getUser(userId);
-        const newBalance = parseFloat(user?.balance || "0") + wonAmount;
+        const newBalance = parseFloat(user?.balance || "0") + amount;
         await storage.updateUserBalance(userId, newBalance.toString());
       }
+    } else if (winnerPrize.type === "points" && winnerPrize.value) {
+      const points = parseInt(winnerPrize.value.replace(/[^0-9]/g, ""));
+      const newPoints = (user?.ringtonePoints || 0) + points;
 
-      res.json({
-        success: true,
-        prize: wonAmount,
-        isWinner: wonAmount > 0,
+      await storage.updateUserRingtonePoints(userId, newPoints);
+      await storage.createTransaction({
+        userId,
+        type: "prize",
+        amount: points.toString(),
+        description: `Scratch card prize: ${points} Ringtone Points`,
       });
-    } catch (error) {
-      console.error("Error playing scratch card:", error);
-      res.status(500).json({ message: "Failed to play scratch card" });
     }
-  });
+
+    res.json({
+      success: true,
+      prize: winnerPrize,
+    });
+  } catch (error) {
+    console.error("Error playing scratch card:", error);
+    res.status(500).json({ message: "Failed to play scratch card" });
+  }
+});
+
 
   // Convert ringtone points to wallet balance
 app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) => {

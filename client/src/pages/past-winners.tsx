@@ -1,10 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import ScratchCard from "@/components/games/scratch-card";
 import { useState } from "react";
-import { Competition } from "@shared/schema";
-import SpinWheel from "@/components/games/spinwheeltest";
+
 
 interface WinnerWithDetails {
   id: string;
@@ -63,85 +61,13 @@ export default function PastWinners() {
   const displayWinners = winners.length > 0 ? winners : dummyWinners;
 
 
-   const dummyCompetition : Competition = {
-    id: "comp1",
-    title: "Win a Dream Car!",
-    description: "Scratch to reveal your prize",
-    imageUrl: null,
-    type: "scratch",
-    ticketPrice: "2.50",
-    maxTickets: null,
-    soldTickets: null,
-    prizeData: {},
-    isActive: true,
-    createdAt: null,
-    updatedAt: null,
-  };
-
-
-  const dummySpinCompetition: Competition = {
-    id: "spin1",
-    title: "Spin & Win Jackpot!",
-    description: "Spin the wheel to reveal your prize!",
-    imageUrl: null,
-    type: "spin", // ✅ must be one of "scratch" | "spin" | "instant"
-    ticketPrice: "5.00",
-    maxTickets: null,
-    soldTickets: null,
-    prizeData: [
-      { amount: 10, probability: 0.3 },
-    { amount: 25, probability: 0.25 },
-    { amount: 100, probability: 0.2 },
-    { amount: 500, probability: 0.15 },
-    { amount: 100, probability: 0.05 },
-    { amount: 500, probability: 0.03 },
-    { amount: 250, probability: 0.015 },
-    { amount: 750, probability: 0.005 },
-    ],
-    isActive: true,
-    createdAt: null,
-    updatedAt: null,
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       {/* <SpinWheel/> */}
-      {!showScratchCard && (
-        <button
-          onClick={() => setShowScratchCard(true)}
-          className="px-6 py-3 bg-primary text-white rounded-lg"
-        >
-          Open Scratch Card
-        </button>
-      )}
 
-      {showScratchCard && (
-        <ScratchCard
-          competition={dummyCompetition}
-          isPurchasing={false}
-          onPurchase={() => alert("Buying a real card…")}
-          onClose={() => setShowScratchCard(false)} // ✅ this closes it
-        />
-      )}
 
-         {!showSpinWheel && (
-        <button
-          onClick={() => setShowSpinWheel(true)}
-          className="px-6 py-3 bg-primary text-white rounded-lg"
-        >
-          Open Spin Wheel
-        </button>
-      )}
-
-      {/* {showSpinWheel && (
-        <SpinWheel
-          competition={dummySpinCompetition}
-          isPurchasing={false}
-          onPurchase={() => alert("Buying a real spin…")}
-          onClose={() => setShowSpinWheel(false)} // ✅ closes it
-        />
-      )} */}
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/5">
         <div className="container mx-auto px-4 py-16">

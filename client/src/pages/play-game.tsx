@@ -9,12 +9,14 @@ import { Competition, User, Ticket } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import SpinWheel from "@/components/games/spinwheeltest";
-
-interface WheelSegment {
-  brand: string;
-  amount: number | string;
-  probability: number;
-}
+import ScratchCardTest from "@/components/games/scratch-card-test"; // Import your scratch card component
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function PlayGamePage() {
   const { id } = useParams();
@@ -25,6 +27,7 @@ export default function PlayGamePage() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [gameResult, setGameResult] = useState<any>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string>("");
+const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
   const { data: competition } = useQuery<Competition>({
     queryKey: ["/api/competitions", id],
@@ -47,13 +50,47 @@ export default function PlayGamePage() {
     }
   }, [availableTickets, selectedTicketId]);
 
- const playGameMutation = useMutation({
-  mutationFn: async (data: { ticketId: string; winnerPrize: any }) => {
-    const response = await apiRequest("POST", "/api/play-spin-wheel", data);
+  // Spin wheel mutation
+  const playSpinWheelMutation = useMutation({
+    mutationFn: async (data: { ticketId: string; winnerPrize: any }) => {
+      const response = await apiRequest("POST", "/api/play-spin-wheel", data);
+      return response.json();
+    },
+    onSuccess: (result) => {
+      setGameResult(result);
+       setIsResultModalOpen(true); 
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "Please login again",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 1000);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to play game",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Scratch card mutation
+const playScratchCardMutation = useMutation({
+  mutationFn: async (data: { winnerPrize: any }) => {
+    const response = await apiRequest("POST", "/api/play-scratch-card", data);
     return response.json();
   },
   onSuccess: (result) => {
     setGameResult(result);
+     setIsResultModalOpen(true); 
     queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
   },
@@ -71,30 +108,51 @@ export default function PlayGamePage() {
     }
     toast({
       title: "Error",
-      description: error.message || "Failed to play game",
+      description: error.message || "Failed to play scratch card",
       variant: "destructive",
     });
   },
 });
 
-const handleSpinComplete = (winnerSegment: number, winnerLabel: string, winnerPrize: any) => {
-  const ticketToUse = availableTickets[0]; // 👈 Always use the first available ticket
 
-  if (!ticketToUse) {
-    toast({
-      title: "No Tickets Left",
-      description: "You’ve used all your spins! Purchase more tickets to play again.",
-      variant: "destructive",
+  const handleSpinComplete = (winnerSegment: number, winnerLabel: string, winnerPrize: any) => {
+    const ticketToUse = availableTickets[0];
+
+    if (!ticketToUse) {
+      toast({
+        title: "No Tickets Left",
+        description: "You've used all your spins! Purchase more tickets to play again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    playSpinWheelMutation.mutate({
+      ticketId: ticketToUse.id,
+      winnerPrize: winnerPrize
     });
-    return;
-  }
+  };
 
-  playGameMutation.mutate({
-    ticketId: ticketToUse.id,
-    winnerPrize: winnerPrize
-  });
-};
+  const handleScratchComplete = (prize: { type: string; value: string }) => {
+    const ticketToUse = availableTickets[0];
 
+    if (!ticketToUse) {
+      toast({
+        title: "No Tickets Left",
+        description: "You've used all your scratch cards! Purchase more tickets to play again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Format the prize to match your backend expectation
+    const winnerPrize = {
+      type: prize.type,
+      value: prize.value
+    };
+
+   playScratchCardMutation.mutate({ winnerPrize });
+  };
 
   const handlePlayAgain = () => {
     setGameResult(null);
@@ -163,7 +221,7 @@ const handleSpinComplete = (winnerSegment: number, winnerLabel: string, winnerPr
     );
   }
 
-  const prizes = (competition.prizeData as WheelSegment[]) || [];
+  const prizes = (competition.prizeData as any) || [];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -180,87 +238,111 @@ const handleSpinComplete = (winnerSegment: number, winnerLabel: string, winnerPr
             {/* Ticket Count Display */}
             <div className="bg-primary/20 rounded-lg px-6 py-3 inline-block mt-4">
               <span className="text-lg font-semibold">
-                Available Spins: <span className="text-primary">{ticketCount}</span>
+                Available {competition.type === "spin" ? "Spins" : "Scratch Cards"}: <span className="text-primary">{ticketCount}</span>
               </span>
             </div>
           </div>
 
-          {!gameResult ? (
-            <div className="space-y-8">
-              {/* Ticket Selection (simplified) */}
-             
+        <div className="space-y-8 opacity-100">
+  {/* Game Interface */}
+  {competition.type === "spin" ? (
+    <div className="text-center">
+      <SpinWheel
+        onSpinComplete={handleSpinComplete}
+        isSpinning={isSpinning}
+        setIsSpinning={setIsSpinning}
+      />
+    </div>
+  ) : (
+    <div className="text-center">
+      <ScratchCardTest
+        competition={competition}
+        onScratchComplete={handleScratchComplete}
+      />
+    </div>
+  )}
+</div>
 
-              {/* Game Interface */}
-              {competition.type === "spin" ? (
-                <div className="text-center">
-                  <SpinWheel 
-                    onSpinComplete={handleSpinComplete}
-                    isSpinning={isSpinning}
-                    setIsSpinning={setIsSpinning}
-                  />
-                </div>
-              ) : (
-                <div className="text-center">
-                  <div className="scratch-card mx-auto mb-8">
-                    <div className="scratch-content">
-                      <p className="text-lg text-muted-foreground">Scratch to reveal your prize!</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            /* Game Result */
-            <div className="text-center">
-              <div className="bg-card rounded-xl border border-border p-8 mb-8">
-                <h2 className="text-3xl font-bold mb-4">
-                  {gameResult.success ? "🎉 Congratulations!" : "😔 Try Again!"}
-                </h2>
-                {gameResult.prize && (
-                  <div className="space-y-4">
-                    {competition.type === "spin" && gameResult.prize.brand && (
-                      <p className="text-xl">You landed on: <strong>{gameResult.prize.brand}</strong></p>
-                    )}
-                    <p className="text-2xl font-bold text-primary">
-                      Prize: {typeof gameResult.prize.amount === 'number' ? 
-                        `£${gameResult.prize.amount}` : 
-                        gameResult.prize.amount || gameResult.prize}
-                    </p>
-                    {typeof gameResult.prize.amount === 'number' && gameResult.prize.amount > 0 && (
-                      <p className="text-green-600">Prize has been added to your wallet!</p>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-x-4">
-                {ticketCount > 0 ? (
-                  <button 
-                    onClick={handlePlayAgain}
-                    className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                    Play Again ({ticketCount - 1} spins left)
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => setLocation(`/competition/${id}`)}
-                    className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                    Purchase More Tickets
-                  </button>
-                )}
-                <button 
-                  onClick={() => setLocation("/")}
-                  className="bg-muted text-muted-foreground px-6 py-3 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"
-                >
-                  Back to Competitions
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
-      
+       <Dialog open={isResultModalOpen} onOpenChange={setIsResultModalOpen}>
+  <DialogContent className="max-w-md md:max-w-xl flex flex-col justify-center items-center text-center">
+    <DialogHeader className="text-center">
+      <DialogTitle className="text-3xl w-full text-center font-bold">
+        {gameResult?.success ? "🎉 Congratulations!" : "😔 Try Again!"}
+      </DialogTitle>
+    </DialogHeader>
+
+    {gameResult?.prize && (
+      <div className="space-y-4 mt-4">
+        {competition.type === "spin" && gameResult.prize.brand && (
+          <p className="text-xl">
+            You landed on: <strong>{gameResult.prize.brand}</strong>
+          </p>
+        )}
+
+        <p className="text-2xl font-bold text-primary">
+          {competition.type === "spin" ? (
+            typeof gameResult.prize.amount === "number"
+              ? `£${gameResult.prize.amount}`
+              : gameResult.prize.amount || gameResult.prize
+          ) : gameResult.prize.type === "cash" ? (
+            `£${gameResult.prize.value}`
+          ) : (
+            `${gameResult.prize.value} Ringtone Points`
+          )}
+        </p>
+
+        {(competition.type === "spin" &&
+          typeof gameResult.prize.amount === "number" &&
+          gameResult.prize.amount > 0) ||
+        (competition.type === "scratch" &&
+          gameResult.prize.type === "cash" &&
+          parseFloat(gameResult.prize.value.replace(/[^0-9.]/g, "")) > 0) ? (
+          <p className="text-green-600">
+            Prize has been added to your wallet!
+          </p>
+        ) : competition.type === "scratch" &&
+          gameResult.prize.type === "points" ? (
+          <p className="text-green-600">
+            Ringtone points have been added to your account!
+          </p>
+        ) : null}
+      </div>
+    )}
+
+    <DialogFooter className="mt-6 flex justify-center gap-4">
+      {ticketCount > 0 ? (
+        <button
+          onClick={() => {
+            handlePlayAgain();
+            setIsResultModalOpen(false);
+          }}
+          className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
+        >
+          Play Again ({ticketCount - 1}{" "}
+          {competition.type === "spin" ? "spins" : "scratch"} left)
+        </button>
+      ) : (
+        <button
+          onClick={() => setLocation(`/competition/${id}`)}
+          className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
+        >
+          Purchase More Tickets
+        </button>
+      )}
+      <button
+        onClick={() => {
+          setIsResultModalOpen(false);
+          setLocation("/");
+        }}
+        className="bg-muted text-muted-foreground px-6 py-3 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"
+      >
+        Back to Competitions
+      </button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
       <Footer />
     </div>
   );
