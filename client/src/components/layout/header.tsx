@@ -48,11 +48,9 @@ export default function Header() {
               <img
                 src={logoImage}
                 alt="RingToneRiches Logo"
-                className="w-14 h-14 md:w-20 md:h-20 object-contain"
+                className="w-36 h-18 md:w-48 md:h-24 object-contain"
               />
-              <span className="text-lg md:text-2xl font-bold gradient-text">
-                RINGTONE RICHES
-              </span>
+             
             </div>
           </Link>
 

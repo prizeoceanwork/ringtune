@@ -230,19 +230,22 @@ async getUserRingtonePoints(userId: string): Promise<number> {
 
   // Winner operations
   async getRecentWinners(limit: number): Promise<any[]> {
-    return await db
-      .select()
-      .from(winners)
-      .leftJoin(users, eq(winners.userId, users.id))
-      .leftJoin(competitions, eq(winners.competitionId, competitions.id))
-      .orderBy(desc(winners.createdAt))
-      .limit(limit);
-  }
+  return await db
+    .select()
+    .from(winners)
+    .leftJoin(users, eq(winners.userId, users.id))
+    .leftJoin(competitions, eq(winners.competitionId, competitions.id))
+    .orderBy(desc(winners.createdAt))
+    .limit(limit);
+}
 
-  async createWinner(winner: Omit<Winner, 'id' | 'createdAt'>): Promise<Winner> {
-    const [created] = await db.insert(winners).values(winner).returning();
-    return created;
-  }
+async createWinner(winner: Omit<Winner, "id" | "createdAt">): Promise<Winner> {
+  const [created] = await db.insert(winners).values({
+    ...winner,
+    createdAt: new Date(),
+  }).returning();
+  return created;
+}
 }
 
 export const storage = new DatabaseStorage();

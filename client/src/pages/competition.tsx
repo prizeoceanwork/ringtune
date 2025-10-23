@@ -9,6 +9,15 @@ import Testimonials from "@/components/testimonials";
 import { Competition, User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
 
 export default function CompetitionPage() {
   const { id } = useParams();
@@ -20,6 +29,34 @@ export default function CompetitionPage() {
   };
   const queryClient = useQueryClient();
   const [quantity, setQuantity] = useState(1);
+  const [showQuiz, setShowQuiz] = useState(false);
+const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
+
+
+const quizQuestions = [
+  { question: "What color is the sky on a clear day?", options: ["Green", "Blue", "Red", "Yellow"], correct: "Blue" },
+  { question: "How many legs does a cat have?", options: ["2", "3", "4", "5"], correct: "4" },
+  { question: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter"], correct: "Mars" },
+  { question: "What do bees make?", options: ["Milk", "Honey", "Juice"], correct: "Honey" },
+  { question: "Which ocean is the largest?", options: ["Atlantic", "Indian", "Pacific"], correct: "Pacific" },
+  { question: "What is 2 + 2?", options: ["3", "4", "5"], correct: "4" },
+  { question: "Which animal says 'Moo'?", options: ["Dog", "Cat", "Cow"], correct: "Cow" },
+  { question: "Which is a fruit?", options: ["Carrot", "Apple", "Potato"], correct: "Apple" },
+  { question: "What shape has 3 sides?", options: ["Triangle", "Square", "Circle"], correct: "Triangle" },
+  { question: "How many days are in a week?", options: ["5", "6", "7"], correct: "7" },
+];
+const [quizQuestion, setQuizQuestion] = useState(quizQuestions[0]);
+
+// When user clicks the button → pick a random question
+const handleOpenQuiz = () => {
+  const randomIndex = Math.floor(Math.random() * quizQuestions.length);
+  setQuizQuestion(quizQuestions[randomIndex]);
+  setSelectedAnswer(null);
+  setIsAnswerCorrect(null);
+  setShowQuiz(true);
+};
+
 
   const { data: competition, isLoading } = useQuery<Competition>({
     queryKey: ["/api/competitions", id],
@@ -30,6 +67,12 @@ export default function CompetitionPage() {
     queryKey: ["/api/user/tickets"],
     enabled: isAuthenticated,
   });
+
+const isSoldOut =
+  competition?.maxTickets && competition.maxTickets > 0
+    ? (competition.soldTickets ?? 0) >= competition.maxTickets
+    : false;
+
 
   // Filter tickets for this competition
   const availableTickets = userTickets.filter(
@@ -55,9 +98,9 @@ export default function CompetitionPage() {
     queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
     queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
     queryClient.invalidateQueries({ queryKey: ["/api/competitions", id] });
+    queryClient.invalidateQueries({ queryKey: ["/api/competitions"] });
     
   } else {
-    // 💳 Stripe payment required
     setLocation(`/checkout/${data.orderId}?client_secret=${data.clientSecret}&quantity=${quantity}`);
   }
 },
@@ -83,18 +126,42 @@ export default function CompetitionPage() {
   });
 
   const handlePurchase = () => {
-    if (!isAuthenticated) {
-      window.location.href = "/api/login";
-      return;
-    }
+  if (!isAuthenticated) {
+    window.location.href = "/api/login";
+    return;
+  }
 
-    if (!competition) return;
+  if (!competition) return;
 
-    purchaseTicketMutation.mutate({
-      competitionId: competition.id,
-      quantity,
+  const remainingTickets =
+    (competition.maxTickets ?? 0) - (competition.soldTickets ?? 0);
+
+  if (remainingTickets <= 0) {
+    toast({
+      title: "Sold Out",
+      description: "All tickets for this competition are sold out.",
+      variant: "destructive",
     });
-  };
+    return;
+  }
+
+  if (quantity > remainingTickets) {
+    toast({
+      title: "Too Many Tickets",
+      description: `Only ${remainingTickets} ticket${
+        remainingTickets > 1 ? "s" : ""
+      } remaining. Please reduce your quantity.`,
+      variant: "destructive",
+    });
+    return;
+  }
+
+  purchaseTicketMutation.mutate({
+    competitionId: competition.id,
+    quantity,
+  });
+};
+
 
   const totalPrice = competition
     ? parseFloat(competition.ticketPrice) * quantity
@@ -135,6 +202,23 @@ export default function CompetitionPage() {
     );
   }
 
+
+const handleSubmitAnswer = () => {
+  if (selectedAnswer === quizQuestion.correct) {
+    setIsAnswerCorrect(true);
+    setShowQuiz(false);
+    handlePurchase(); // ✅ Proceed to purchase if correct
+  } else {
+    setIsAnswerCorrect(false);
+    toast({
+      title: "Wrong Answer ❌",
+      description: "That’s not correct! Try another competition.",
+      variant: "destructive",
+    });
+    setShowQuiz(false);
+    setTimeout(() => setLocation("/"), 1500); // ⬅️ Redirect to competitions page
+  }
+};
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
@@ -152,7 +236,7 @@ export default function CompetitionPage() {
                     "https://images.unsplash.com/photo-1518611012118-696072aa579a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
                   }
                   alt={competition.title}
-                  className="w-full h-96 object-cover rounded-xl"
+                  className="w-full h-98 object-cover rounded-xl"
                   data-testid={`img-competition-${competition.id}`}
                 />
 
@@ -221,7 +305,7 @@ export default function CompetitionPage() {
 
               {/* Right: Purchase Form */}
               <div className="space-y-6">
-                <div className="bg-card rounded-xl border border-border p-8">
+                <div className="bg-card  rounded-xl border border-border p-8">
                   <h1
                     className="text-3xl font-bold mb-4"
                     data-testid={`heading-${competition.id}`}
@@ -229,11 +313,14 @@ export default function CompetitionPage() {
                     {competition.title}
                   </h1>
 
-                  {competition.description && (
-                    <p className="text-muted-foreground mb-6">
-                      {competition.description}
-                    </p>
-                  )}
+                 {competition.description && (
+                  <div
+                   className="text-muted-foreground mb-6 overflow-y-scroll h-96 whitespace-pre-line leading-relaxed space-y-2"
+                  >
+                    {competition.description}
+                  </div>
+                )}
+
 
                   <div className="space-y-6">
                     <div className="flex items-center justify-between text-2xl font-bold">
@@ -305,13 +392,23 @@ export default function CompetitionPage() {
 
                         {competition.type === "instant" ? (
                           // 🟢 Instant prize: no play button, just buy more
-                          <button
-                            onClick={handlePurchase}
-                            disabled={purchaseTicketMutation.isPending}
-                            className="w-full bg-primary text-primary-foreground py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-                          >
-                            {purchaseTicketMutation.isPending ? "Processing..." : "BUY MORE"}
-                          </button>
+                           <button
+  onClick={() => setShowQuiz(true)}
+  disabled={isSoldOut || purchaseTicketMutation.isPending}
+  className={`w-full py-4 rounded-lg font-bold text-lg transition-opacity ${
+    isSoldOut
+      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+      : "bg-primary text-primary-foreground hover:opacity-90"
+  }`}
+  data-testid="button-purchase"
+>
+  {isSoldOut
+    ? "SOLD OUT"
+    : purchaseTicketMutation.isPending
+    ? "Processing..."
+    : "ADD COMPETITION ENTRY"}
+</button>
+
                         ) : (
                           // 🌀 Spin / Scratch competitions
                           <div className="grid grid-cols-2 gap-4">
@@ -335,15 +432,22 @@ export default function CompetitionPage() {
                       </div>
                     ) : (
                       <button
-                        onClick={handlePurchase}
-                        disabled={purchaseTicketMutation.isPending}
-                        className="w-full bg-primary text-primary-foreground py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-                        data-testid="button-purchase"
-                      >
-                        {purchaseTicketMutation.isPending
-                          ? "Processing..."
-                          : "ADD COMPETITION ENTRY"}
-                      </button>
+onClick={handleOpenQuiz}
+  disabled={isSoldOut || purchaseTicketMutation.isPending}
+  className={`w-full py-4 rounded-lg font-bold text-lg transition-opacity ${
+    isSoldOut
+      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+      : "bg-primary text-primary-foreground hover:opacity-90"
+  }`}
+  data-testid="button-purchase"
+>
+  {isSoldOut
+    ? "SOLD OUT"
+    : purchaseTicketMutation.isPending
+    ? "Processing..."
+    : "ADD COMPETITION ENTRY"}
+</button>
+
                     )}
                   </div>
                 </div>
@@ -381,6 +485,42 @@ export default function CompetitionPage() {
           </button>
         </div>
       </section>
+<Dialog open={showQuiz} onOpenChange={setShowQuiz}>
+  <DialogContent className="max-w-md">
+    <DialogHeader>
+      <DialogTitle className="text-xl font-bold text-center">
+        Answer to Proceed
+      </DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4">
+      <p className="text-center font-medium">{quizQuestion.question}</p>
+      <div className="grid grid-cols-1 gap-2">
+        {quizQuestion.options.map((option) => (
+          <button
+            key={option}
+            onClick={() => setSelectedAnswer(option)}
+            className={`w-full p-3 rounded-lg border ${
+              selectedAnswer === option
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border hover:bg-muted"
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+    <DialogFooter className="flex justify-center">
+      <Button
+        disabled={!selectedAnswer}
+        onClick={handleSubmitAnswer}
+        className="mt-4"
+      >
+        Submit
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
       <Testimonials />
       <Footer />

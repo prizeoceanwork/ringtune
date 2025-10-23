@@ -20,14 +20,14 @@ export default function CompetitionCard({ competition, authenticated = false }: 
   return (
     <>
       <div 
-        className="competition-card bg-card rounded-xl border border-border overflow-hidden" 
+        className="competition-card bg-card h-fit rounded-xl border border-border overflow-hidden" 
         data-type={competition.type}
         data-testid={`card-competition-${competition.id}`}
       >
         <img 
           src={competition.imageUrl || 'https://images.unsplash.com/photo-1518611012118-696072aa579a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400'} 
           alt={competition.title}
-          className="w-full h-48 object-cover"
+          className="w-full h-98 object-cover"
           data-testid={`img-competition-${competition.id}`}
         />
         <div className="p-6 space-y-4">

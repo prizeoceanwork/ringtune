@@ -382,164 +382,8 @@ app.post("/api/cashflows/webhook", async (req, res) => {
     res.status(500).json({ error: "Webhook processing failed" });
   }
 });
-// app.post("/api/create-payment-intent", isAuthenticated, async (req: any, res) => {
-//   try {
-//     if (!stripe) {
-//       return res.status(500).json({
-//         message: "Payment processing not configured. Please contact admin.",
-//       });
-//     }
-
-//     const { orderId, quantity } = req.body;
-//     const userId = req.user.id;
-
-//     console.log("=== PAYMENT INTENT REQUEST ===");
-//     console.log("Full req.body:", JSON.stringify(req.body, null, 2));
-//     console.log("orderId:", orderId);
-//     console.log("quantity:", quantity);
-//     console.log("userId:", userId);
-
-//     if (!orderId || typeof orderId !== "string") {
-//       return res.status(400).json({ message: "Invalid or missing order ID" });
-//     }
-
-//     // ✅ Get the order first
-//     const order = await storage.getOrder(orderId);
-//     if (!order) {
-//       return res.status(404).json({ message: "Order not found" });
-//     }
-
-//     // ✅ Extract competitionId from order
-//     const competitionId = order.competitionId;
-//     console.log("Resolved competitionId from order:", competitionId);
-
-//     // ✅ Fetch competition
-//     const competition = await storage.getCompetition(competitionId);
-//     if (!competition) {
-//       console.log("❌ Competition not found for ID:", competitionId);
-//       return res.status(404).json({ message: "Competition not found" });
-//     }
-
-//     console.log("✅ Competition found:", competition.title);
-
-//     // ✅ Calculate total price (Stripe uses smallest currency unit)
-//     const totalAmount = Math.round(parseFloat(competition.ticketPrice) * (quantity || 1) * 100);
-
-//     console.log("Creating Stripe Checkout Session...");
-//     const session = await stripe.checkout.sessions.create({
-//       payment_method_types: ["card"],
-//       line_items: [
-//         {
-//           price_data: {
-//             currency: "usd",
-//             product_data: {
-//               name: competition.title,
-//               images: competition.imageUrl ? [competition.imageUrl] : [],
-//             },
-//             unit_amount: Math.round(parseFloat(competition.ticketPrice) * 100),
-//           },
-//           quantity: quantity || 1,
-//         },
-//       ],
-//       mode: "payment",
-//       success_url: `${process.env.CLIENT_URL}/success/competition?session_id={CHECKOUT_SESSION_ID}`,
-//       cancel_url: `${process.env.CLIENT_URL}/checkout/${orderId}`,
-//       metadata: {
-//         orderId,
-//         competitionId,
-//         userId,
-//         quantity: quantity.toString(),
-//       },
-//     });
-
-//     console.log("✅ Checkout session created:", session.id);
-
-//     return res.json({
-//       url: session.url,
-//       orderId,
-//     });
-//   } catch (error) {
-//     console.error("❌ Error creating payment session:", error);
-//     res.status(500).json({
-//       message: "Failed to create payment session",
-//       error: (error as any).message,
-//     });
-//   }
-// });
-
-
-
-// app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
-//   try {
-//     const { sessionId } = req.body;
-//     if (!sessionId) {
-//       return res.status(400).json({ message: "Missing sessionId" });
-//     }
-
-//     if (!stripe) {
-//       return res.status(500).json({
-//         message: "Payment processing not configured. Please contact admin.",
-//       });
-//     }
-
-//     const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-//     if (session.payment_status !== "paid") {
-//       return res.status(400).json({ message: "Payment not completed" });
-//     }
-
-//     const { userId, competitionId, orderId, quantity } = session.metadata || {};
-//     const amount = (session.amount_total || 0) / 100;
-//     const ticketQuantity = parseInt(quantity) || 1; // ✅ Get the quantity
-
-//     if (!userId || !orderId) {
-//       return res.status(400).json({ message: "Invalid payment metadata" });
-//     }
-
-//     console.log(`🎫 Creating ${ticketQuantity} tickets for order ${orderId}`);
-
-//     // Update order status
-//     await storage.updateOrderStatus(orderId, "completed");
-
-//     // Record transaction
-//     await storage.createTransaction({
-//       userId,
-//       type: "purchase",
-//       amount: amount.toString(),
-//       description: `Stripe ticket purchase for ${competitionId} - ${ticketQuantity} tickets`,
-//     });
-
-//     // ✅ Create multiple tickets based on quantity
-//     const ticketPromises = [];
-//     for (let i = 0; i < ticketQuantity; i++) {
-//       ticketPromises.push(
-//         storage.createTicket({
-//           userId,
-//           competitionId,
-//           ticketNumber: nanoid(8).toUpperCase(),
-//         })
-//       );
-//     }
-
-//     // Wait for all tickets to be created
-//     await Promise.all(ticketPromises);
-
-//     console.log(`✅ Successfully created ${ticketQuantity} tickets for user ${userId}`);
-
-//     res.json({ 
-//       success: true, 
-//       competitionId, 
-//       orderId,
-//       ticketsCreated: ticketQuantity 
-//     });
-//   } catch (error) {
-//     console.error("Error confirming ticket payment:", error);
-//     res.status(500).json({ message: "Failed to confirm payment" });
-//   }
-// });
 
   // Ticket purchase route
- // ✅ Unified purchase route (wallet or Stripe fallback)
 app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
@@ -553,6 +397,22 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
 
     const totalAmount = parseFloat(competition.ticketPrice) * quantity;
 
+     const soldTickets = competition.soldTickets || 0;
+    const maxTickets = competition.maxTickets || 0;
+
+    if (maxTickets > 0 && soldTickets >= maxTickets) {
+      return res.status(400).json({ message: "Competition sold out" });
+    }
+
+    const remainingTickets = maxTickets - soldTickets;
+    if (maxTickets > 0 && quantity > remainingTickets) {
+      return res.status(400).json({
+        message: `Only ${remainingTickets} ticket${
+          remainingTickets > 1 ? "s" : ""
+        } remaining`,
+      });
+    }
+
     // 2️⃣ Fetch user + wallet balance
     const user = await storage.getUser(userId);
     const userBalance = parseFloat(user?.balance || "0");
@@ -563,18 +423,18 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
       competitionId,
       quantity,
       totalAmount: totalAmount.toString(),
-      paymentMethod: userBalance >= totalAmount ? "wallet" : "stripe",
+      paymentMethod: userBalance >= totalAmount ? "wallet" : "cashflows",
       status: "pending",
     });
 
-    // 4️⃣ If wallet balance covers it
+    // 4️⃣ If wallet balance covers it → instant purchase
     if (userBalance >= totalAmount) {
       const newBalance = (userBalance - totalAmount).toString();
 
-      // Deduct from wallet
+      // Deduct balance
       await storage.updateUserBalance(userId, newBalance);
 
-      // Record transaction
+      // Transaction record
       await storage.createTransaction({
         userId,
         type: "purchase",
@@ -590,20 +450,15 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
         const ticket = await storage.createTicket({
           userId,
           competitionId,
-
           ticketNumber,
           isWinner: false,
         });
         tickets.push(ticket);
       }
 
-      // Update competition sold count
       await storage.updateCompetitionSoldTickets(competitionId, quantity);
-
-      // Mark order completed
       await storage.updateOrderStatus(order.id, "completed");
 
-      // Return success immediately
       return res.json({
         success: true,
         message: "Tickets purchased via wallet",
@@ -613,36 +468,20 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
       });
     }
 
-    // 5️⃣ Otherwise → Stripe payment flow
-    if (!stripe) {
-      return res.status(500).json({
-        message: "Payment processing not configured. Please contact admin.",
-      });
-    }
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalAmount * 100),
-      currency: "gbp",
-      metadata: {
-        orderId: order.id,
-        userId,
-        competitionId,
-      },
-    });
-
-    // Keep order as pending until payment success webhook
-    await storage.updateOrderStatus(order.id, "pending");
-
+    // 5️⃣ Otherwise → return order ID so frontend can call /api/create-payment-intent
     return res.json({
+      success: true,
+      message: "Proceed to Cashflows payment",
       orderId: order.id,
-      clientSecret: paymentIntent.client_secret,
-      paymentMethod: "stripe",
+      paymentMethod: "cashflows",
     });
+
   } catch (error) {
     console.error("Error purchasing ticket:", error);
     res.status(500).json({ message: "Failed to complete purchase" });
   }
 });
+
 
 
   // Payment confirmation webhook
@@ -698,57 +537,78 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
 app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
-    const { ticketId, winnerPrize } = req.body;
+    const { winnerPrize } = req.body;
+    const SPIN_COST = 2; // €2 per spin
 
-    // Get ticket and verify ownership
-    const userTickets = await storage.getUserTickets(userId);
-    const ticket = userTickets.find((t) => t.id === ticketId);
-
-    if (!ticket) {
-      return res.status(404).json({ message: "Ticket not found" });
-    }
-
-    // Get competition
-    const competition = await storage.getCompetition(ticket.competitionId);
-    if (!competition || competition.type !== "spin") {
-      return res
-        .status(400)
-        .json({ message: "Invalid competition for spin wheel" });
-    }
-
-    // Remove the used ticket
-    await storage.deleteTicket(ticketId);
-
-    // Handle prize distribution based on the prize from frontend
+    // Fetch user and ensure balance is enough
     const user = await storage.getUser(userId);
-    
+    const currentBalance = parseFloat(user?.balance || "0");
+
+    if (currentBalance < SPIN_COST) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient balance. Please top up your wallet.",
+      });
+    }
+
+    // Deduct the spin cost
+    const newBalance = currentBalance - SPIN_COST;
+    await storage.updateUserBalance(userId, newBalance.toFixed(2));
+
+    await storage.createTransaction({
+      userId,
+      type: "withdrawal",
+      amount: SPIN_COST.toFixed(2),
+      description: "Spin Wheel - Spin cost",
+    });
+
+    // ---- Handle prize logic ----
     if (typeof winnerPrize.amount === "number" && winnerPrize.amount > 0) {
-      // Cash prize - add to wallet balance
+      // 💰 Cash prize
+      const prizeAmount = winnerPrize.amount;
+      const finalBalance = newBalance + prizeAmount;
+
+      await storage.updateUserBalance(userId, finalBalance.toFixed(2));
+
       await storage.createTransaction({
         userId,
         type: "prize",
-        amount: winnerPrize.amount.toString(),
-        description: `Spin wheel prize: ${winnerPrize.brand} - £${winnerPrize.amount}`,
+        amount: prizeAmount.toFixed(2),
+        description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - €${prizeAmount}`,
       });
 
-      const newBalance = parseFloat(user?.balance || "0") + winnerPrize.amount;
-      await storage.updateUserBalance(userId, newBalance.toString());
-      
-    } else if (typeof winnerPrize.amount === "string" && winnerPrize.amount.includes("Ringtones")) {
-      // Ringtone points prize - add to ringtone points
-      const ringtoneMatch = winnerPrize.amount.match(/(\d+)\s*Ringtones/);
-      if (ringtoneMatch) {
-        const points = parseInt(ringtoneMatch[1]);
-        const currentPoints = user?.ringtonePoints || 0;
-        const newPoints = currentPoints + points;
-        
+      await storage.createWinner({
+        userId,
+        competitionId: null,
+        prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
+        prizeValue: `€${prizeAmount}`,
+        imageUrl: winnerPrize.image || null,
+      });
+    } else if (
+      typeof winnerPrize.amount === "string" &&
+      winnerPrize.amount.includes("Ringtones")
+    ) {
+      // 🎵 Ringtone points prize
+      const match = winnerPrize.amount.match(/(\d+)\s*Ringtones/);
+      if (match) {
+        const points = parseInt(match[1]);
+        const newPoints = (user?.ringtonePoints || 0) + points;
+
         await storage.updateUserRingtonePoints(userId, newPoints);
-        
+
         await storage.createTransaction({
           userId,
           type: "prize",
           amount: points.toString(),
-          description: `Spin wheel prize: ${winnerPrize.brand} - ${points} Ringtone Points`,
+          description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - ${points} Ringtones`,
+        });
+
+        await storage.createWinner({
+          userId,
+          competitionId: null,
+          prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
+          prizeValue: `${points} Ringtones`,
+          imageUrl: winnerPrize.image || null,
         });
       }
     }
@@ -756,6 +616,7 @@ app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
     res.json({
       success: true,
       prize: winnerPrize,
+      balance: newBalance.toFixed(2),
     });
   } catch (error) {
     console.error("Error playing spin wheel:", error);
@@ -767,53 +628,52 @@ app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { winnerPrize } = req.body;
+    const SCRATCH_COST = 2; // €2 per scratch
 
-const userTickets = await storage.getUserTickets(userId);
-if (!userTickets || userTickets.length === 0) {
-  return res.status(400).json({ success: false, message: "No tickets available" });
-}
+    const user = await storage.getUser(userId);
+    const currentBalance = parseFloat(user?.balance || "0");
 
-// ✅ Find a ticket linked to a scratch competition
-let ticket;
-for (const t of userTickets) {
-  const comp = await storage.getCompetition(t.competitionId);
-  if (comp && comp.type === "scratch") {
-    ticket = t;
-    break;
-  }
-}
-
-if (!ticket) {
-  return res.status(400).json({ success: false, message: "No scratch card tickets available" });
-}
-
-const competition = await storage.getCompetition(ticket.competitionId);
-
-    if (!competition || competition.type !== "scratch") {
-      return res.status(400).json({ message: "Invalid competition for scratch card" });
+    if (currentBalance < SCRATCH_COST) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient balance. Please top up your wallet.",
+      });
     }
 
-    // Remove the used ticket
-    await storage.deleteTicket(ticket.id);
+    // 💳 Deduct scratch cost
+    const newBalance = currentBalance - SCRATCH_COST;
+    await storage.updateUserBalance(userId, newBalance.toFixed(2));
+    await storage.createTransaction({
+      userId,
+      type: "withdrawal",
+      amount: SCRATCH_COST.toFixed(2),
+      description: "Scratch Card - Play cost",
+    });
 
-    // Handle prize distribution based on the prize from frontend
-    const user = await storage.getUser(userId);
-
+    // 🎁 Handle prize logic
     if (winnerPrize.type === "cash" && winnerPrize.value) {
-      const amount = parseFloat(winnerPrize.value.replace(/[^0-9.]/g, ""));
+      const amount = parseFloat(winnerPrize.value);
       if (amount > 0) {
+        const finalBalance = newBalance + amount;
+        await storage.updateUserBalance(userId, finalBalance.toFixed(2));
+
         await storage.createTransaction({
           userId,
           type: "prize",
-          amount: amount.toString(),
-          description: `Scratch card prize: £${amount}`,
+          amount: amount.toFixed(2),
+          description: `Scratch card prize: €${amount}`,
         });
 
-        const newBalance = parseFloat(user?.balance || "0") + amount;
-        await storage.updateUserBalance(userId, newBalance.toString());
+        await storage.createWinner({
+          userId,
+          competitionId : null,
+          prizeDescription: "Scratch Card Prize",
+          prizeValue: `€${amount}`,
+          imageUrl: winnerPrize.image || null,
+        });
       }
     } else if (winnerPrize.type === "points" && winnerPrize.value) {
-      const points = parseInt(winnerPrize.value.replace(/[^0-9]/g, ""));
+      const points = parseInt(winnerPrize.value);
       const newPoints = (user?.ringtonePoints || 0) + points;
 
       await storage.updateUserRingtonePoints(userId, newPoints);
@@ -821,13 +681,22 @@ const competition = await storage.getCompetition(ticket.competitionId);
         userId,
         type: "prize",
         amount: points.toString(),
-        description: `Scratch card prize: ${points} Ringtone Points`,
+        description: `Scratch card prize: ${points} Ringtones`,
+      });
+
+      await storage.createWinner({
+        userId,
+        competitionId : null, 
+        prizeDescription: "Scratch Card Prize",
+        prizeValue: `${points} Ringtones`,
+        imageUrl: winnerPrize.image || null,
       });
     }
 
     res.json({
       success: true,
       prize: winnerPrize,
+      balance: newBalance.toFixed(2),
     });
   } catch (error) {
     console.error("Error playing scratch card:", error);
@@ -932,40 +801,6 @@ app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) 
     }
   });
 
-  // Wallet top-up
-  // app.post("/api/wallet/topup", isAuthenticated, async (req: any, res) => {
-  //   try {
-  //     if (!stripe) {
-  //       return res
-  //         .status(500)
-  //         .json({
-  //           message: "Payment processing not configured. Please contact admin.",
-  //         });
-  //     }
-
-  //     const userId = req.user.id;
-  //     const { amount } = req.body;
-
-  //     if (!amount || amount <= 0) {
-  //       return res.status(400).json({ message: "Invalid amount" });
-  //     }
-
-  //     const paymentIntent = await stripe.paymentIntents.create({
-  //       amount: Math.round(amount * 100), // Convert to cents
-  //       currency: "gbp",
-  //       metadata: {
-  //         userId,
-  //         type: "wallet_topup",
-  //       },
-  //     });
-
-  //     res.json({ clientSecret: paymentIntent.client_secret });
-  //   } catch (error) {
-  //     console.error("Error creating wallet top-up:", error);
-  //     res.status(500).json({ message: "Failed to create wallet top-up" });
-  //   }
-  // });
-
 
   app.post("/api/wallet/topup", isAuthenticated, async (req: any, res) => {
   try {
@@ -1019,9 +854,6 @@ app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) 
   }
 });
 
-
-  // server/routes.ts (or similar)
-// wallet routes
 app.post("/api/wallet/topup-checkout", async (req, res) => {
   try {
     const { amount, userId } = req.body;
@@ -1053,8 +885,6 @@ app.post("/api/wallet/topup-checkout", async (req, res) => {
     });
   }
 });
-
-
 
 app.post("/api/wallet/confirm-topup", isAuthenticated, async (req: any, res) => {
   try {
@@ -1092,23 +922,19 @@ app.post("/api/wallet/confirm-topup", isAuthenticated, async (req: any, res) => 
   }
 });
 
+app.get("/api/winners", async (req, res) => {
+  try {
+    const winners = await storage.getRecentWinners(50);
+    console.log("🧩 Winners from storage:", winners);
+    res.json(winners);
+  } catch (error) {
+    console.error("Error fetching winners:", error);
+    res.status(500).json({ message: "Failed to fetch winners" });
+  }
+});
 
 
-
-
-  // Past winners
-  app.get("/api/winners", async (req, res) => {
-    try {
-      const winners = await storage.getRecentWinners(50);
-      res.json(winners);
-    } catch (error) {
-      console.error("Error fetching winners:", error);
-      res.status(500).json({ message: "Failed to fetch winners" });
-    }
-  });
-
-  // Seed initial competitions
-  app.post("/api/seed-competitions", async (req, res) => {
+app.post("/api/seed-competitions", async (req, res) => {
     try {
       const competitions = req.body;
       for (const comp of competitions) {
@@ -1121,7 +947,7 @@ app.post("/api/wallet/confirm-topup", isAuthenticated, async (req: any, res) => 
     }
   });
 
-  app.delete("/api/delete" , async (req , res) => {
+app.delete("/api/delete" , async (req , res) => {
     try {
     console.log("🗑️ Deleting all competitions...");
         await db.delete(transactions).execute();
@@ -1137,7 +963,7 @@ app.post("/api/wallet/confirm-topup", isAuthenticated, async (req: any, res) => 
       res.status(500).json({ message: "Failed to delete competitions" });
     }  })
 
-    app.delete("/api/test-delete", (req, res) => {
+app.delete("/api/test-delete", (req, res) => {
 
   res.json({ message: "Delete route works!" });
 });

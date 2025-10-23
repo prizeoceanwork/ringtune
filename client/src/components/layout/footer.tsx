@@ -16,15 +16,13 @@ export default function Footer() {
               <span className="text-lg md:text-xl font-bold gradient-text">RINGTONE RICHES</span>
             </div>
             <div className="flex space-x-4">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-facebook">
+              <a href="https://www.facebook.com/profile.php?id=61579695463356" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-facebook">
                 <i className="fab fa-facebook text-xl"></i>
               </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-instagram">
-                <i className="fab fa-instagram text-xl"></i>
+              <a href="https://www.tiktok.com/@ringtone.riches?_t=ZN-90jrPt73hTi&_r=1" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-instagram">
+                <i className="fab fa-tiktok text-xl"></i>
               </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-youtube">
-                <i className="fab fa-youtube text-xl"></i>
-              </a>
+              
             </div>
             <div className="flex space-x-2">
               <div className="h-6 w-12 bg-muted rounded flex items-center justify-center text-xs">VISA</div>
@@ -70,7 +68,7 @@ export default function Footer() {
             <h4 className="text-primary font-bold">CONTACT</h4>
             <div className="space-y-2">
               <p className="text-muted-foreground" data-testid="text-email">
-                support@ringtoneRiches.com
+                support@ringtoneriches.com
               </p>
               <p className="text-muted-foreground" data-testid="text-live-chat">
                 Live Chat Available

@@ -1,26 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import wheelcirclevideo from "../../../../attached_assets/a.mp4";
-import wheelcirclebackgroundvideo from "../../../../attached_assets/b.mp4";
-import AustonMartin from "../../../../attached_assets/spin/Aston Martin.png";
-import Audi from "../../../../attached_assets/spin/Audi.png";
-import Bentley from "../../../../attached_assets/spin/Bentley.png";
-import BMW from "../../../../attached_assets/spin/BMW.png";
-import Ferrari from "../../../../attached_assets/spin/Ferrari.png";
-import Ford from "../../../../attached_assets/spin/Ford.png";
-import Honda from "../../../../attached_assets/spin/Honda.png";
-import Jaguar from "../../../../attached_assets/spin/Jaguar.png";
-import Lamborghini from "../../../../attached_assets/spin/Lamborghini.png";
-import LandRover from "../../../../attached_assets/spin/Land Rover.png";
-import Lexus from "../../../../attached_assets/spin/Lexus.png";
-import Maserati from "../../../../attached_assets/spin/Maserati.png";
-import McLaren from "../../../../attached_assets/spin/McLaren.png";
-import MarcedesBenz from "../../../../attached_assets/spin/Mercedes-Benz.png";
-import Nissan from "../../../../attached_assets/spin/Nissan.png";
-import Porsche from "../../../../attached_assets/spin/Porsche.png";
-import RollsRoyce from "../../../../attached_assets/spin/Rolls-Royce.png";
-import Toyota from "../../../../attached_assets/spin/Toyota.png";
-import VW from "../../../../attached_assets/spin/VW.png";
-import wheelbg from "../../../../attached_assets/wheel.png"
+import R_Prize from "../../../../attached_assets/R_prize.png"
 
 interface SpinWheelProps {
   onSpinComplete: (winnerSegment: number, winnerLabel: string, winnerPrize: any) => void;
@@ -34,34 +13,36 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
   const [loadedImages, setLoadedImages] = useState<{
     [key: string]: HTMLImageElement;
   }>({});
+
   
   // Define prizes with amounts for each segment
   const segments = [
-    { label: "Aston Martin", color: "#134A3C", icon: AustonMartin, amount: 150 },
-    { label: "Audi", color: "#0CBDF8", icon: Audi, amount: "3000 Ringtones" },
-    { label: "Bentley", color: "#66C72D", icon: Bentley, amount: 250 },
-    { label: "BMW", color: "#D69E1C", icon: BMW, amount: 50 },
+    { label: "Aston Martin", color: "#134A3C", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047801/Aston_Martin_v6gszj.png", amount: 0.15 },
+    { label: "Audi", color: "#0CBDF8", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047801/Audi_nw9i5h.png", amount: "3000 Ringtones" },
+    { label: "Bentley", color: "#66C72D", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047801/Bentley_nysafz.png", amount: 0.25 },
+    { label: "BMW", color: "#D69E1C", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047801/BMW_i0tqyy.png", amount: 0.50 },
     { label: "Nice Try", color: "#4B5563", icon: "❌", amount: 0 },
     
-    { label: "Ferrari", color: "#C2586D", icon: Ferrari, amount: 500 },
-    { label: "Ford", color: "#190B89", icon: Ford, amount: "100 Ringtones" },
-    { label: "Honda", color: "#821A93", icon: Honda, amount: "150 Ringtones" },
-    { label: "Jaguar", color: "#1CC2A6", icon: Jaguar, amount: "1000 Ringtones" },
+    { label: "Ferrari", color: "#C2586D", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047802/Ferrari_dah6eg.png", amount: 0.50 },
+    { label: "Ford", color: "#190B89", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047802/Ford_vmtbt3.png", amount: "100 Ringtones" },
+    { label: "Honda", color: "#821A93", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047803/Honda_i7cdnx.png", amount: "150 Ringtones" },
+    { label: "Jaguar", color: "#1CC2A6", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047803/Jaguar_zqxaro.png", amount: "1000 Ringtones" },
     { label: "Nice Try", color: "#4B5563", icon: "❌", amount: 0 },
     
-    { label: "Lamborghini", color: "#F472B6", icon: Lamborghini, amount: 90 },
-    { label: "Land Rover", color: "#9CA3AF", icon: LandRover, amount: "2000 Ringtones" },
-    { label: "Lexus", color: "#D97706", icon: Lexus, amount: "850 Ringtones" },
-    { label: "Maserati", color: "#7C3AED", icon: Maserati, amount: 75 },
-    { label: "McLaren", color: "#DB2777", icon: McLaren, amount: 70 },
+    { label: "Lamborghini", color: "#F472B6", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047803/Lamborghini_putnai.png", amount: 0.90 },
+    { label: "Land Rover", color: "#9CA3AF", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047803/Land_Rover_qw3sbi.png", amount: "2000 Ringtones" },
+    { label: "Lexus", color: "#D97706", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/Lexus_gmipqr.png", amount: "850 Ringtones" },
+    { label: "Maserati", color: "#7C3AED", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/Maserati_yw5d6h.png", amount: 5 },
+    { label: "McLaren", color: "#DB2777", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047805/McLaren_xs6gby.png", amount: 0.70 },
     { label: "Nice Try", color: "#4B5563", icon: "❌", amount: 0 },
 
-    { label: "Mercedes-Benz", color: "#16A34A", icon: MarcedesBenz, amount: 60 },
-    { label: "Nissan", color: "#DC2626", icon: Nissan, amount: "50 Ringtones" },
-    { label: "Porsche", color: "#2563EB", icon: Porsche, amount: 80 },
-    { label: "Rolls-Royce", color: "#9333EA", icon: RollsRoyce, amount: 1000 },
-    { label: "Toyota", color: "#EAB308", icon: Toyota, amount: "250 Ringtones" },
-    { label: "Volkswagen", color: "#0891B2", icon: VW, amount: "450 Ringtones" },
+    { label: "Mercedes-Benz", color: "#16A34A", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/Mercedes-Benz_anjfrx.png", amount: 0.60 },
+    { label: "Nissan", color: "#DC2626", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047801/Nissan_vs45zn.png", amount: "50 Ringtones" },
+    { label: "Porsche", color: "#2563EB", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047801/Porsche_gqdfsm.png", amount: 0.80 },
+    { label: "R", color: "#4B5563", icon: R_Prize, amount: 100 },
+    { label: "Rolls-Royce", color: "#9333EA", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047802/Rolls-Royce_qdjhyx.png", amount: 0.10 },
+    { label: "Toyota", color: "#EAB308", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047802/Toyota_aaugrp.png", amount: "250 Ringtones" },
+    { label: "Volkswagen", color: "#0891B2", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047803/VW_ct3imm.png", amount: "450 Ringtones" },
     { label: "Nice Try", color: "#4B5563", icon: "❌", amount: 0 },
   ];
   
@@ -237,9 +218,6 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden">
-      <h2 className="text-3xl z-20 mb-10 font-bold gradient-text" data-testid="heading-spin-wheel">
-        SPIN THE WHEEL
-      </h2>
 
       {/* background video */}
       <video
@@ -248,12 +226,12 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
         muted
         className="absolute top-0 left-0 w-full h-full object-cover"
       >
-        <source src={wheelcirclebackgroundvideo} type="video/mp4" />
+        <source src="https://res.cloudinary.com/dziy5sjas/video/upload/v1761231208/backgroundwheelvideo_cjhrwq.mp4" type="video/mp4" />
       </video>
 
       <div className="relative w-full max-w-2xl aspect-square flex items-center justify-center z-10">
         <img
-          src={wheelbg}
+          src="https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/wheel_basnqc.png"
           alt="Wheel Ring"
           className="absolute w-full h-full object-contain z-10 pointer-events-none"
         />
@@ -263,29 +241,36 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
         />
 
         {/* show video in center when spinning or idle (no winner) */}
-        {(!winner || isSpinning) && (
+        {(winner || isSpinning) && (
           <video
             autoPlay
             loop
             muted
             className="absolute w-2/5 h-2/5 rounded-full object-cover"
           >
-            <source src={wheelcirclevideo} type="video/mp4" />
+            <source src="https://res.cloudinary.com/dziy5sjas/video/upload/v1761140835/Middlevideo_s9eiiy.mp4" type="video/mp4" />
           </video>
         )}
-
+       <video
+            autoPlay
+            loop
+            muted
+            className="absolute w-2/5 h-2/5 rounded-full object-cover"
+          >
+            <source src="https://res.cloudinary.com/dziy5sjas/video/upload/v1761140835/Middlevideo_s9eiiy.mp4" type="video/mp4" />
+          </video>
         {/* show SPIN button only when not spinning */}
         {!isSpinning && (
           <button
             onClick={spinWheel}
-            className="absolute bottom-[40%] sm:bottom-[45%] 
-                       px-2 py-1 sm:px-4 sm:py-2 
+            className="absolute bottom-[38%] sm:bottom-[38%] 
+                       px-2 py-1 
                        bg-yellow-400 rounded-[4px] 
                        hover:bg-yellow-500 text-black font-bold 
-                       text-sm sm:text-md 
+                       text-xs sm:text-md 
                        shadow-xl transition-all"
           >
-            {winner ? "SPIN AGAIN" : "SPIN WHEEL"}
+            {winner ? "SPIN" : "SPIN"}
           </button>
         )}
       </div>

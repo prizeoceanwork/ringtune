@@ -27,6 +27,7 @@ import PaymentCancelled from "./pages/cancelled";
 import PaymentFailed from "./pages/failed";
 import CheckoutFailed from "./pages/competition-failed";
 import CheckoutCancelled from "./pages/competition-cancelled";
+import { useEffect } from "react";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();

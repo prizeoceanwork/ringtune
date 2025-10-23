@@ -101,9 +101,9 @@ export const transactions = pgTable("transactions", {
 export const winners = pgTable("winners", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  competitionId: uuid("competition_id").notNull().references(() => competitions.id),
+  competitionId: uuid("competition_id").references(() => competitions.id),
   prizeDescription: text("prize_description").notNull(),
-  prizeValue: decimal("prize_value", { precision: 10, scale: 2 }).notNull(),
+  prizeValue: text("prize_value").notNull(),
   imageUrl: text("image_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
