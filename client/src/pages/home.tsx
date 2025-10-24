@@ -27,6 +27,24 @@ export default function Home() {
     queryKey: ["/api/competitions"],
   });
 
+  const { data: userTickets = [] } = useQuery({
+  queryKey: ["/api/user/tickets"],
+  enabled: !!isAuthenticated, // only fetch if logged in
+});
+
+const spinCompetition = competitions.find((c) => c.type === "spin");
+const scratchCompetition = competitions.find((c) => c.type === "scratch");
+
+
+const spinTickets = userTickets.filter(
+  (t: any) => t.competitionId === spinCompetition?.id
+);
+const scratchTickets = userTickets.filter(
+  (t: any) => t.competitionId === scratchCompetition?.id
+);
+
+const spinTicketCount = spinTickets.length;
+const scratchTicketCount = scratchTickets.length;
   const [filteredCompetitions, setFilteredCompetitions] = useState<Competition[]>([]);
   const [activeFilter, setActiveFilter] = useState("all");
   const [isSpinning, setIsSpinning] = useState(false);
@@ -34,13 +52,20 @@ export default function Home() {
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
   useEffect(() => {
-    const instantComps = competitions.filter((c) => c.type === "instant")
-    setFilteredCompetitions(instantComps);
-  }, [competitions]);
+  if (!isAuthenticated) {
+    // Hide instant competitions for guests
+    setFilteredCompetitions(
+      competitions.filter((c) => c.type !== "instant")
+    );
+  } else {
+    setFilteredCompetitions(competitions);
+  }
+}, [competitions, isAuthenticated]);
+
 
   const handleFilterChange = (filterType: string) => {
     setActiveFilter(filterType);
-    if (filterType === "all") setFilteredCompetitions(competitions.filter((c) => c.type === "instant"));
+    if (filterType === "all")  setFilteredCompetitions(competitions);
     else setFilteredCompetitions(competitions.filter((c) => c.type === filterType));
   };
 
@@ -144,7 +169,7 @@ const playScratchCardMutation = useMutation({
                 className={`competition-filter px-6 py-3 rounded-lg font-medium transition-colors ${
                   activeFilter === type
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                    : "bg-muted gradient hover:bg-primary hover:text-primary-foreground"
                 }`}
               >
                 {type === "all"
@@ -169,6 +194,7 @@ const playScratchCardMutation = useMutation({
                 onSpinComplete={handleSpinComplete}
                 isSpinning={isSpinning}
                 setIsSpinning={setIsSpinning}
+                ticketCount={spinTicketCount} 
               />
             </div>
           ) 
@@ -203,6 +229,7 @@ const playScratchCardMutation = useMutation({
       // ✅ Call backend to handle actual prize + deduction
       playScratchCardMutation.mutate({ winnerPrize });
     }}
+    scratchTicketCount={scratchTicketCount}
   />
 ) :
   activeFilter === "instant" ? (
@@ -299,7 +326,7 @@ isLoading ? (
 
 
 
-      <Testimonials />
+      {/* <Testimonials /> */}
       <Footer />
     </div>
   );

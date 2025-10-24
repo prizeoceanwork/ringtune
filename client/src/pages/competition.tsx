@@ -99,6 +99,7 @@ const isSoldOut =
     queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
     queryClient.invalidateQueries({ queryKey: ["/api/competitions", id] });
     queryClient.invalidateQueries({ queryKey: ["/api/competitions"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/user/orders"] });
     
   } else {
     setLocation(`/checkout/${data.orderId}?client_secret=${data.clientSecret}&quantity=${quantity}`);
@@ -113,7 +114,7 @@ const isSoldOut =
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/login";
         }, 1000);
         return;
       }
@@ -125,42 +126,50 @@ const isSoldOut =
     },
   });
 
-  const handlePurchase = () => {
+const handlePurchase = () => {
   if (!isAuthenticated) {
-    window.location.href = "/api/login";
+    window.location.href = "/login";
     return;
   }
 
   if (!competition) return;
 
-  const remainingTickets =
-    (competition.maxTickets ?? 0) - (competition.soldTickets ?? 0);
+  // 🧠 Normalize type
+  const type = competition.type?.toLowerCase();
 
-  if (remainingTickets <= 0) {
-    toast({
-      title: "Sold Out",
-      description: "All tickets for this competition are sold out.",
-      variant: "destructive",
-    });
-    return;
+  // ✅ Only check ticket limits for INSTANT competitions
+  if (type === "instant") {
+    const remainingTickets =
+      (competition.maxTickets ?? 0) - (competition.soldTickets ?? 0);
+
+    if (remainingTickets <= 0) {
+      toast({
+        title: "Sold Out",
+        description: "All tickets for this competition are sold out.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (quantity > remainingTickets) {
+      toast({
+        title: "Too Many Tickets",
+        description: `Only ${remainingTickets} ticket${
+          remainingTickets > 1 ? "s" : ""
+        } remaining. Please reduce your quantity.`,
+        variant: "destructive",
+      });
+      return;
+    }
   }
 
-  if (quantity > remainingTickets) {
-    toast({
-      title: "Too Many Tickets",
-      description: `Only ${remainingTickets} ticket${
-        remainingTickets > 1 ? "s" : ""
-      } remaining. Please reduce your quantity.`,
-      variant: "destructive",
-    });
-    return;
-  }
-
+  // 🟢 Proceed with purchase
   purchaseTicketMutation.mutate({
     competitionId: competition.id,
     quantity,
   });
 };
+
 
 
   const totalPrice = competition
@@ -313,13 +322,12 @@ const handleSubmitAnswer = () => {
                     {competition.title}
                   </h1>
 
-                 {competition.description && (
-                  <div
-                   className="text-muted-foreground mb-6 overflow-y-scroll h-96 whitespace-pre-line leading-relaxed space-y-2"
-                  >
-                    {competition.description}
-                  </div>
-                )}
+                 {competition.description?.trim() ? (
+  <div className="text-muted-foreground mb-6 overflow-y-scroll max-h-96 whitespace-pre-line leading-relaxed space-y-2">
+    {competition.description}
+  </div>
+) : null}
+
 
 
                   <div className="space-y-6">
@@ -411,18 +419,12 @@ const handleSubmitAnswer = () => {
 
                         ) : (
                           // 🌀 Spin / Scratch competitions
-                          <div className="grid grid-cols-2 gap-4">
-                            <button
-                              onClick={() => setLocation(`/play/${competition.id}`)}
-                              className="bg-green-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-700 transition-colors"
-                              data-testid="button-play-now"
-                            >
-                              PLAY NOW
-                            </button>
+                          <div className="w-full bg-muted rounded-lg p-4 text-center">
+                           
                             <button
                               onClick={handlePurchase}
                               disabled={purchaseTicketMutation.isPending}
-                              className="bg-primary text-primary-foreground py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                              className="bg-primary w-full text-primary-foreground py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
                               data-testid="button-purchase-more"
                             >
                               {purchaseTicketMutation.isPending ? "Processing..." : "BUY MORE"}

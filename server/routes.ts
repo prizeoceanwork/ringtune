@@ -36,122 +36,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupCustomAuth(app);
 
   // Registration route
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const result = registerUserSchema.safeParse(req.body);
-      if (!result.success) {
-        return res
-          .status(400)
-          .json({
-            message: "Invalid registration data",
-            errors: result.error.issues,
-          });
-      }
-
-      const {
-        email,
-        password,
-        firstName,
-        lastName,
-        dateOfBirth,
-        receiveNewsletter,
-        birthMonth,
-        birthYear,
-      } = req.body;
-
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res
-          .status(400)
-          .json({ message: "User already exists with this email" });
-      }
-
-      // Hash password
-      const hashedPassword = await hashPassword(password || "");
-
-      // Create date of birth string if provided
-      const dobString =
-        birthMonth && birthYear
-          ? `${birthYear}-${String(birthMonth).padStart(2, "0")}-01`
-          : undefined;
-
-      // Create user
-      const user = await storage.createUser({
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        dateOfBirth: dobString,
-        receiveNewsletter: receiveNewsletter || false,
-      });
-
-      res
-        .status(201)
-        .json({ message: "User registered successfully", userId: user.id });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Failed to register user" });
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const result = registerUserSchema.safeParse(req.body);
+    if (!result.success) {
+      return res
+        .status(400)
+        .json({
+          message: "Invalid registration data",
+          errors: result.error.issues,
+        });
     }
-  });
+
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      dateOfBirth,
+      receiveNewsletter,
+      birthMonth,
+      birthYear,
+    } = req.body;
+
+    // Check if user already exists
+    const existingUser = await storage.getUserByEmail(email);
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "User already exists with this email" });
+    }
+
+    // Hash password
+    const hashedPassword = await hashPassword(password || "");
+
+    // Create date of birth string if provided
+    const dobString =
+      birthMonth && birthYear
+        ? `${birthYear}-${String(birthMonth).padStart(2, "0")}-01`
+        : undefined;
+
+    // Create user
+    const user = await storage.createUser({
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      dateOfBirth: dobString,
+      receiveNewsletter: receiveNewsletter || false,
+    });
+
+    res
+      .status(201)
+      .json({ message: "User registered successfully", userId: user.id });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ message: "Failed to register user" });
+  }
+});
 
   // Login route
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const result = loginUserSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ message: "Invalid login data" });
-      }
-
-      const { email, password } = result.data;
-
-      // Get user by email
-      const user = await storage.getUserByEmail(email);
-      if (!user || !user.password) {
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
-
-      // Verify password
-      const isValidPassword = await verifyPassword(password, user.password);
-      if (!isValidPassword) {
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
-
-      // Store user ID in session
-      (req as any).session.userId = user.id;
-
-      res.json({
-        message: "Login successful",
-        user: { id: user.id, email: user.email, firstName: user.firstName },
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "Failed to log in" });
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const result = loginUserSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: "Invalid login data" });
     }
-  });
 
-  // Logout route
-  app.post("/api/auth/logout", (req: any, res) => {
-    req.session.destroy((err: any) => {
-      if (err) {
-        console.error("Logout error:", err);
-        return res.status(500).json({ message: "Failed to log out" });
-      }
-      res.json({ message: "Logged out successfully" });
+    const { email, password } = result.data;
+
+    // Get user by email
+    const user = await storage.getUserByEmail(email);
+    if (!user || !user.password) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // Verify password
+    const isValidPassword = await verifyPassword(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // Store user ID in session
+    (req as any).session.userId = user.id;
+
+    res.json({
+      message: "Login successful",
+      user: { id: user.id, email: user.email, firstName: user.firstName },
     });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Failed to log in" });
+  }
+});
+
+// Logout route
+app.post("/api/auth/logout", (req: any, res) => {
+  req.session.destroy((err: any) => {
+    if (err) {
+      console.error("Logout error:", err);
+      return res.status(500).json({ message: "Failed to log out" });
+    }
+    res.json({ message: "Logged out successfully" });
   });
+});
 
   // Get current user route
-  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
+app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
       res.json(req.user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
-  });
+});
 
-  app.put("/api/auth/user", isAuthenticated, async (req: any, res) => {
+app.put("/api/auth/user", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const {
@@ -208,29 +208,28 @@ if (email) {
 });
 
   // Competition routes
-  app.get("/api/competitions", async (req, res) => {
-    try {
-      const competitions = await storage.getCompetitions();
-      res.json(competitions);
-    } catch (error) {
-      console.error("Error fetching competitions:", error);
-      res.status(500).json({ message: "Failed to fetch competitions" });
-    }
-  });
+app.get("/api/competitions", async (req, res) => {
+  try {
+    const competitions = await storage.getCompetitions();
+    res.json(competitions);
+  } catch (error) {
+    console.error("Error fetching competitions:", error);
+    res.status(500).json({ message: "Failed to fetch competitions" });
+  }
+});
 
-  app.get("/api/competitions/:id", async (req, res) => {
-    try {
-      const competition = await storage.getCompetition(req.params.id);
-      if (!competition) {
-        return res.status(404).json({ message: "Competition not found" });
-      }
-      res.json(competition);
-    } catch (error) {
-      console.error("Error fetching competition:", error);
-      res.status(500).json({ message: "Failed to fetch competition" });
+app.get("/api/competitions/:id", async (req, res) => {
+  try {
+    const competition = await storage.getCompetition(req.params.id);
+    if (!competition) {
+      return res.status(404).json({ message: "Competition not found" });
     }
-  });
-
+    res.json(competition);
+  } catch (error) {
+    console.error("Error fetching competition:", error);
+    res.status(500).json({ message: "Failed to fetch competition" });
+  }
+ });
 
 app.post("/api/create-payment-intent", isAuthenticated, async (req: any, res) => {
   try {
@@ -273,7 +272,6 @@ app.post("/api/create-payment-intent", isAuthenticated, async (req: any, res) =>
     });
   }
 });
-
 
 // Update the payment success route
 app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
@@ -389,35 +387,41 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
     const userId = req.user.id;
     const { competitionId, quantity = 1 } = req.body;
 
-    // 1️⃣ Fetch competition
     const competition = await storage.getCompetition(competitionId);
     if (!competition) {
       return res.status(404).json({ message: "Competition not found" });
     }
 
     const totalAmount = parseFloat(competition.ticketPrice) * quantity;
+    const compType = competition.type;
 
-     const soldTickets = competition.soldTickets || 0;
-    const maxTickets = competition.maxTickets || 0;
+    // ✅ Skip sold-out checks for SPIN and SCRATCH
+    if (compType === "instant") {
+      const soldTickets = Number(competition.soldTickets || 0);
+      const maxTickets = Number(competition.maxTickets || 0);
 
-    if (maxTickets > 0 && soldTickets >= maxTickets) {
-      return res.status(400).json({ message: "Competition sold out" });
+      if (maxTickets > 0 && soldTickets >= maxTickets) {
+        return res.status(400).json({ message: "Competition sold out" });
+      }
+
+      const remainingTickets = maxTickets - soldTickets;
+      if (maxTickets > 0 && quantity > remainingTickets) {
+        return res.status(400).json({
+          message: `Only ${remainingTickets} ticket${
+            remainingTickets > 1 ? "s" : ""
+          } remaining`,
+        });
+      }
+    } else {
+      // 🌀 For spin or scratch, make sure soldTickets/maxTickets don’t cause errors
+      competition.soldTickets = 0;
+      competition.maxTickets = null;
     }
 
-    const remainingTickets = maxTickets - soldTickets;
-    if (maxTickets > 0 && quantity > remainingTickets) {
-      return res.status(400).json({
-        message: `Only ${remainingTickets} ticket${
-          remainingTickets > 1 ? "s" : ""
-        } remaining`,
-      });
-    }
-
-    // 2️⃣ Fetch user + wallet balance
+    // --- continue purchase logic below ---
     const user = await storage.getUser(userId);
     const userBalance = parseFloat(user?.balance || "0");
 
-    // 3️⃣ Create base order (pending)
     const order = await storage.createOrder({
       userId,
       competitionId,
@@ -427,14 +431,10 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
       status: "pending",
     });
 
-    // 4️⃣ If wallet balance covers it → instant purchase
     if (userBalance >= totalAmount) {
       const newBalance = (userBalance - totalAmount).toString();
 
-      // Deduct balance
       await storage.updateUserBalance(userId, newBalance);
-
-      // Transaction record
       await storage.createTransaction({
         userId,
         type: "purchase",
@@ -443,7 +443,6 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
         orderId: order.id,
       });
 
-      // Generate tickets
       const tickets = [];
       for (let i = 0; i < quantity; i++) {
         const ticketNumber = nanoid(8).toUpperCase();
@@ -456,7 +455,10 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
         tickets.push(ticket);
       }
 
-      await storage.updateCompetitionSoldTickets(competitionId, quantity);
+      if (compType === "instant") {
+        await storage.updateCompetitionSoldTickets(competitionId, quantity);
+      }
+
       await storage.updateOrderStatus(order.id, "completed");
 
       return res.json({
@@ -468,14 +470,12 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
       });
     }
 
-    // 5️⃣ Otherwise → return order ID so frontend can call /api/create-payment-intent
     return res.json({
       success: true,
       message: "Proceed to Cashflows payment",
       orderId: order.id,
       paymentMethod: "cashflows",
     });
-
   } catch (error) {
     console.error("Error purchasing ticket:", error);
     res.status(500).json({ message: "Failed to complete purchase" });
@@ -485,53 +485,53 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
 
 
   // Payment confirmation webhook
-  app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
-    try {
-      const { orderId, paymentIntentId } = req.body;
-     const userId = req.user.id;
+app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
+  try {
+    const { orderId, paymentIntentId } = req.body;
+    const userId = req.user.id;
 
-      const order = await storage.getOrder(orderId);
-      if (!order || order.userId !== userId) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-
-      // Update order status
-      await storage.updateOrderStatus(orderId, "completed");
-
-      // Create tickets
-      const tickets = [];
-      for (let i = 0; i < order.quantity; i++) {
-        const ticketNumber = nanoid(8).toUpperCase();
-        const ticket = await storage.createTicket({
-          userId,
-          competitionId: order.competitionId,
-          ticketNumber,
-          isWinner: false, // This will be determined by game logic
-        });
-        tickets.push(ticket);
-      }
-
-      // Update competition sold tickets
-      await storage.updateCompetitionSoldTickets(
-        order.competitionId,
-        order.quantity
-      );
-
-      // Create transaction record
-      await storage.createTransaction({
-        userId,
-        type: "purchase",
-        amount: `-${order.totalAmount}`,
-        description: `Purchased ${order.quantity} ticket(s)`,
-        orderId,
-      });
-
-      res.json({ success: true, tickets });
-    } catch (error) {
-      console.error("Error confirming payment:", error);
-      res.status(500).json({ message: "Failed to confirm payment" });
+    const order = await storage.getOrder(orderId);
+    if (!order || order.userId !== userId) {
+      return res.status(404).json({ message: "Order not found" });
     }
-  });
+
+    // Update order status
+    await storage.updateOrderStatus(orderId, "completed");
+
+    // Create tickets
+    const tickets = [];
+    for (let i = 0; i < order.quantity; i++) {
+      const ticketNumber = nanoid(8).toUpperCase();
+      const ticket = await storage.createTicket({
+        userId,
+        competitionId: order.competitionId,
+        ticketNumber,
+        isWinner: false, // This will be determined by game logic
+      });
+      tickets.push(ticket);
+    }
+
+    // Update competition sold tickets
+    await storage.updateCompetitionSoldTickets(
+      order.competitionId,
+      order.quantity
+    );
+
+    // Create transaction record
+    await storage.createTransaction({
+      userId,
+      type: "purchase",
+      amount: `-${order.totalAmount}`,
+      description: `Purchased ${order.quantity} ticket(s)`,
+      orderId,
+    });
+
+    res.json({ success: true, tickets });
+  } catch (error) {
+    console.error("Error confirming payment:", error);
+    res.status(500).json({ message: "Failed to confirm payment" });
+  }
+});
 
   // Game routes
 app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
@@ -704,7 +704,6 @@ app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
   }
 });
 
-
   // Convert ringtone points to wallet balance
 app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) => {
   try {
@@ -768,41 +767,41 @@ app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) 
 });
 
   // User account routes
-  app.get("/api/user/orders", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const orders = await storage.getUserOrders(userId);
-      res.json(orders);
-    } catch (error) {
-      console.error("Error fetching user orders:", error);
-      res.status(500).json({ message: "Failed to fetch orders" });
-    }
-  });
+app.get("/api/user/orders", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const orders = await storage.getUserOrders(userId);
+    res.json(orders);
+  } catch (error) {
+    console.error("Error fetching user orders:", error);
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+});
 
-  app.get("/api/user/transactions", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const transactions = await storage.getUserTransactions(userId);
-      res.json(transactions);
-    } catch (error) {
-      console.error("Error fetching user transactions:", error);
-      res.status(500).json({ message: "Failed to fetch transactions" });
-    }
-  });
+app.get("/api/user/transactions", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const transactions = await storage.getUserTransactions(userId);
+    res.json(transactions);
+  } catch (error) {
+    console.error("Error fetching user transactions:", error);
+    res.status(500).json({ message: "Failed to fetch transactions" });
+  }
+});
 
-  app.get("/api/user/tickets", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const tickets = await storage.getUserTickets(userId);
-      res.json(tickets);
-    } catch (error) {
-      console.error("Error fetching user tickets:", error);
-      res.status(500).json({ message: "Failed to fetch tickets" });
-    }
-  });
+app.get("/api/user/tickets", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const tickets = await storage.getUserTickets(userId);
+    res.json(tickets);
+  } catch (error) {
+    console.error("Error fetching user tickets:", error);
+    res.status(500).json({ message: "Failed to fetch tickets" });
+  }
+});
 
 
-  app.post("/api/wallet/topup", isAuthenticated, async (req: any, res) => {
+app.post("/api/wallet/topup", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { amount, direct } = req.body;
@@ -967,6 +966,7 @@ app.delete("/api/test-delete", (req, res) => {
 
   res.json({ message: "Delete route works!" });
 });
-  const httpServer = createServer(app);
-  return httpServer;
+
+const httpServer = createServer(app);
+return httpServer;
 }

@@ -68,7 +68,7 @@ export default function Footer() {
             <h4 className="text-primary font-bold">CONTACT</h4>
             <div className="space-y-2">
               <p className="text-muted-foreground" data-testid="text-email">
-                support@ringtoneriches.com
+                support@ringtoneriches.co.uk
               </p>
               <p className="text-muted-foreground" data-testid="text-live-chat">
                 Live Chat Available

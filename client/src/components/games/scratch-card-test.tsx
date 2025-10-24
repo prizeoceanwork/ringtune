@@ -24,6 +24,7 @@ import TowerOfPisa from "../../../../attached_assets/Tower of Pisa.png";
 interface ScratchCardProps {
   onScratchComplete?: (prize: { type: string; value: string }) => void;
   mode?: "tight" | "loose";
+  scratchTicketCount?: number;
 }
 
 const CSS_WIDTH = 500;
@@ -77,7 +78,7 @@ function generateScratchGrid(mode: "tight" | "loose" = "loose") {
   return { images, isWinner };
 }
 
-export default function ScratchCardTest({ onScratchComplete, mode = "tight" }: ScratchCardProps) {
+export default function ScratchCardTest({ onScratchComplete, mode = "tight", scratchTicketCount }: ScratchCardProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
@@ -232,6 +233,14 @@ const hasCompletedRef = useRef(false);
   return (
     <div className="flex items-center justify-center p-4">
       <div className="p-6 max-w-2xl w-full relative rounded-xl shadow-lg bg-background">
+        <div className="flex justify-center mb-5">
+
+         {scratchTicketCount !== undefined && (
+    <div className="bg-yellow-400 w-fit text-black px-3 py-2 rounded-sm text-sm font-bold shadow-md z-20">
+       Available Ticket{scratchTicketCount !== 1 ? "s" : ""} :{scratchTicketCount} 
+    </div>
+  )}
+        </div>
         <div className="text-center mb-6">
           <h2 className="text-3xl font-bold mb-2">Scratch & Match</h2>
           <p className="text-muted-foreground">Match 3 same images to win!</p>

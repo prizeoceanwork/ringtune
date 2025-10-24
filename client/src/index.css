@@ -146,6 +146,10 @@
     background-clip: text;
   }
 
+  .gradient {
+    color: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);
+  }
+  
   .wheel-container {
     position: relative;
     width: 400px;

@@ -5,9 +5,10 @@ interface SpinWheelProps {
   onSpinComplete: (winnerSegment: number, winnerLabel: string, winnerPrize: any) => void;
   isSpinning: boolean;
   setIsSpinning: (spinning: boolean) => void;
+  ticketCount?: number;
 }
 
-const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIsSpinning }) => {
+const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIsSpinning  ,ticketCount}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [winner, setWinner] = useState<string | null>(null);
   const [loadedImages, setLoadedImages] = useState<{
@@ -230,6 +231,12 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
       </video>
 
       <div className="relative w-full max-w-2xl aspect-square flex items-center justify-center z-10">
+
+         {ticketCount !== undefined && (
+    <div className="absolute -top-20 right-65 bg-yellow-400 text-black px-3 py-2 rounded-sm text-sm font-bold shadow-md z-20">
+       Available Ticket{ticketCount !== 1 ? "s" : ""} :{ticketCount} 
+    </div>
+  )}
         <img
           src="https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/wheel_basnqc.png"
           alt="Wheel Ring"
