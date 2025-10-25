@@ -31,13 +31,13 @@ export default function CompetitionCard({ competition, authenticated = false }: 
           data-testid={`img-competition-${competition.id}`}
         />
         <div className="p-6 space-y-4">
-          <h3 className="text-lg font-bold text-foreground line-clamp-2" data-testid={`text-title-${competition.id}`}>
+          <h3 className="text-sm sm:text-lg font-bold text-foreground line-clamp-2" data-testid={`text-title-${competition.id}`}>
             {competition.title}
           </h3>
           
           {competition.maxTickets && (
             <div className="bg-muted rounded-lg p-3 mb-4">
-              <div className="flex justify-between text-sm text-muted-foreground mb-1">
+              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mb-1">
                 <span>{competition.soldTickets} sold</span>
                 <span>{competition.maxTickets} total</span>
               </div>
@@ -52,7 +52,7 @@ export default function CompetitionCard({ competition, authenticated = false }: 
           )}
           
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-primary" data-testid={`text-price-${competition.id}`}>
+            <span className="text-md sm:text-2xl font-bold text-primary" data-testid={`text-price-${competition.id}`}>
               £{parseFloat(competition.ticketPrice).toFixed(2)}
             </span>
             <span className="text-sm text-muted-foreground">per entry</span>
@@ -61,7 +61,7 @@ export default function CompetitionCard({ competition, authenticated = false }: 
           
           <button 
             onClick={handleViewCompetition}
-            className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-bold hover:opacity-90 transition-opacity"
+            className="w-full bg-primary text-primary-foreground text-sm md:text-lg py-2 sm:py-3 rounded-md font-bold hover:opacity-90 transition-opacity"
             data-testid={`button-enter-${competition.id}`}
           >
             {competition.type === "scratch" ? "SCRATCH NOW" : 

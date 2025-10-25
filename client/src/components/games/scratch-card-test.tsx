@@ -129,25 +129,51 @@ const hasCompletedRef = useRef(false);
     };
   }, []);
 
-  function initCanvas() {
+    useEffect(() => {
+    const handleResize = () => {
+      initCanvas();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+ function initCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
+    const container = canvas.parentElement;
+    if (!container) return;
+    
+    // Get container dimensions
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    // Set canvas CSS dimensions to match container
+    canvas.style.width = `${containerWidth}px`;
+    canvas.style.height = `${containerHeight}px`;
+    
+    // Set canvas internal dimensions (accounting for device pixel ratio)
     const ratio = window.devicePixelRatio || 1;
-    canvas.width = Math.round(CSS_WIDTH * ratio);
-    canvas.height = Math.round(CSS_HEIGHT * ratio);
-    canvas.style.width = `${CSS_WIDTH}px`;
-    canvas.style.height = `${CSS_HEIGHT}px`;
-
+    canvas.width = Math.round(containerWidth * ratio);
+    canvas.height = Math.round(containerHeight * ratio);
+    
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    
+    // Scale the context to account for device pixel ratio
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = "#999";
-    ctx.fillRect(0, 0, CSS_WIDTH, CSS_HEIGHT);
+    ctx.fillRect(0, 0, containerWidth, containerHeight);
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 22px Arial";
+    
+    // Responsive font size
+    const fontSize = Math.max(16, containerWidth * 0.05);
+    ctx.font = `bold ${fontSize}px Arial`;
     ctx.textAlign = "center";
-    ctx.fillText("SCRATCH TO REVEAL", CSS_WIDTH / 2, CSS_HEIGHT / 2);
+    ctx.fillText("SCRATCH TO REVEAL", containerWidth / 2, containerHeight / 2);
     setRevealed(false);
     setPercentScratched(0);
   }
@@ -158,7 +184,10 @@ const hasCompletedRef = useRef(false);
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const brush = 30;
+    
+    // Make brush size responsive based on canvas size
+    const brush = Math.max(15, canvas.clientWidth * 0.04);
+    
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
     ctx.arc(x, y, brush, 0, Math.PI * 2);
@@ -166,6 +195,8 @@ const hasCompletedRef = useRef(false);
 
     if (!rafRef.current) rafRef.current = requestAnimationFrame(() => checkPercentScratched());
   }
+
+
 
   function checkPercentScratched(force = false) {
     rafRef.current = null;
@@ -231,49 +262,46 @@ const hasCompletedRef = useRef(false);
   }
 
   return (
-    <div className="flex items-center justify-center p-4">
-      <div className="p-6 max-w-2xl w-full relative rounded-xl shadow-lg bg-background">
-        <div className="flex justify-center mb-5">
-
-         {scratchTicketCount !== undefined && (
-    <div className="bg-yellow-400 w-fit text-black px-3 py-2 rounded-sm text-sm font-bold shadow-md z-20">
-       Available Ticket{scratchTicketCount !== 1 ? "s" : ""} :{scratchTicketCount} 
-    </div>
-  )}
+  <div className="flex items-center justify-center p-4 min-h-screen">
+      <div className="p-4 sm:p-6 w-full max-w-4xl relative rounded-xl shadow-lg bg-background">
+        <div className="flex justify-center mb-4 sm:mb-5">
+          {scratchTicketCount !== undefined && (
+            <div className="bg-yellow-400 w-fit text-black px-3 py-2 rounded-sm text-sm font-bold shadow-md z-20">
+              Available Ticket{scratchTicketCount !== 1 ? "s" : ""}: {scratchTicketCount} 
+            </div>
+          )}
         </div>
-        <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold mb-2">Scratch & Match</h2>
-          <p className="text-muted-foreground">Match 3 same images to win!</p>
+        
+        <div className="text-center mb-4 sm:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">Scratch & Match</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">Match 3 same images to win!</p>
         </div>
 
-        <div
-          className="relative mx-auto rounded-xl overflow-hidden"
-          style={{ width: CSS_WIDTH, height: CSS_HEIGHT }}
-        >
+        {/* Larger responsive container for canvas */}
+        <div className="relative mx-auto rounded-xl bg-orange-200 overflow-hidden bg-gray-200 w-full sm:w-[500px] min-h-[300px] sm:min-h-[400px] max-h-[600px]">
           {/* UNDERLAY */}
-       <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-gray-100 rounded-xl flex items-center justify-center p-6">
-  <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+         <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-gray-100 rounded-xl flex items-center justify-center p-2 sm:p-4">
+  <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full h-full max-w-md mx-auto p-2">
     {images.map((img, i) => (
       <div
         key={i}
-        className="bg-white rounded-2xl shadow-lg flex items-center justify-center p-4 border border-gray-200 hover:scale-105 transition-transform duration-200"
+        className="bg-white rounded-sm sm:rounded-2xl shadow-lg flex items-center justify-center p-1 border border-gray-200 sm:p-2 border border-gray-200 aspect-square overflow-hidden"
       >
         <img
           src={img.src}
           alt={img.name}
-          className="w-32 h-32 object-contain select-none"
+          className="w-full h-full object-contain select-none p-0.5"
         />
       </div>
     ))}
   </div>
 </div>
 
-
-
           {/* SCRATCH LAYER */}
           <canvas
+            key={sessionKey}
             ref={canvasRef}
-            className="absolute inset-0 rounded-xl cursor-pointer"
+            className="absolute inset-0 rounded-xl cursor-pointer touch-none w-full h-full"
             onMouseDown={(e) => {
               drawingRef.current = true;
               startScratchSound();
@@ -299,10 +327,13 @@ const hasCompletedRef = useRef(false);
               const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
               scratchAt(t.clientX - rect.left, t.clientY - rect.top);
             }}
+            onMouseUp={() => drawingRef.current = false}
+            onMouseLeave={() => drawingRef.current = false}
+            onTouchEnd={() => drawingRef.current = false}
           />
         </div>
 
-        <div className="text-center mt-6">
+        <div className="text-center mt-4 sm:mt-6">
           <p className="text-sm text-muted-foreground">Scratched: {percentScratched}%</p>
         </div>
       </div>

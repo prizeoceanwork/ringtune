@@ -18,16 +18,19 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import spinWheel from "./pages/spinWheel";
 import WalletSuccess from "./pages/success";
-import SpinWheel from "./components/games/spinwheeltest";
 import CheckoutSuccess from "./pages/competion-success";
 import RingtonePoints from "./pages/ringtunePoints";
-import ScratchCard from "./components/games/scratch-card";
 import scratchcard from "./pages/scratch-card";
 import PaymentCancelled from "./pages/cancelled";
 import PaymentFailed from "./pages/failed";
 import CheckoutFailed from "./pages/competition-failed";
 import CheckoutCancelled from "./pages/competition-cancelled";
 import { useEffect } from "react";
+import TermsAndConditions from "./pages/terms-and-conditions";
+import PlayResponsibly from "./pages/play-responsible";
+import PrivacyPolicy from "./pages/privacy-policy";
+import ScratchCardPage from "./pages/scratch-card";
+import instant from "./pages/instant";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -37,7 +40,9 @@ function Router() {
       {/* Public routes - always available */}
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      
+      <Route path="/termsAndConditions" component={TermsAndConditions} />
+      <Route path="/play-responsible" component={PlayResponsibly} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
       {/* Conditional routes based on auth status */}
       {isLoading || !isAuthenticated ? (
         <>
@@ -52,11 +57,13 @@ function Router() {
           <Route path="/competition/:id" component={Competition} />
           <Route path="/play/:id" component={PlayGame} />
           <Route path="/account" component={Account} />
+          <Route path="/instant" component={instant} />
           <Route path="/wallet" component={Wallet} />
           <Route path="/orders" component={Orders} />
           <Route path="/winners" component={PastWinners} />
           <Route path="/checkout/:orderId" component={Checkout} />
-          <Route path="/spin-wheel-test" component={spinWheel} />
+          <Route path="/spin-wheel" component={spinWheel} />
+          <Route path="/scratch-card" component={ScratchCardPage} />
           <Route path="/wallet/success" component={WalletSuccess} />
           <Route path="/wallet/cancelled" component={PaymentCancelled} />
           <Route path="/wallet/failed" component={PaymentFailed} />

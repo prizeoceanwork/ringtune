@@ -4,8 +4,8 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import CompetitionCard from "@/components/competition-card";
 import Testimonials from "@/components/testimonials";
-import { Competition } from "@shared/schema";
-import SpinWheel from "@/components/games/spin-wheel";
+import { Competition, User } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Landing() {
   const { data: competitions = [], isLoading } = useQuery<Competition[]>({
@@ -14,6 +14,7 @@ export default function Landing() {
 
   const [filteredCompetitions, setFilteredCompetitions] = useState<Competition[]>([]);
   const [activeFilter, setActiveFilter] = useState("all");
+  const { isAuthenticated, user } = useAuth() as { isAuthenticated: boolean; user: User | null };
 
   const featuredCompetition = competitions.find(comp => comp.title.includes("BMW M3"));
 
@@ -23,7 +24,6 @@ export default function Landing() {
 
   const handleFilterChange = (filterType: string) => {
     setActiveFilter(filterType);
-    
     if (filterType === "all") {
       setFilteredCompetitions(competitions);
     } else {
@@ -35,7 +35,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
-      {/* <SpinWheel/> */}
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/5"></div>
@@ -47,26 +47,24 @@ export default function Landing() {
                 <span className="text-foreground">FOR JUST PENNIES</span>
               </h1>
               <p className="text-xl text-muted-foreground">
-                Join thousands of players competing for cars, cash, gadgets, and more. 
-                Entry tickets start from just 10p!
+                Take part in exciting competitions to win cash, gadgets, and more. Affordable entry tickets available now!
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button 
                   onClick={() => window.scrollTo({ top: document.getElementById('competitions')?.offsetTop, behavior: 'smooth' })}
                   className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity"
-                  data-testid="button-view-competitions"
                 >
                   VIEW ALL COMPETITIONS
                 </button>
                 <button 
                   onClick={() => window.scrollTo({ top: document.getElementById('how-to-play')?.offsetTop, behavior: 'smooth' })}
                   className="border border-border text-foreground px-8 py-4 rounded-lg font-medium hover:bg-muted transition-colors"
-                  data-testid="button-how-to-play"
                 >
                   HOW TO PLAY
                 </button>
               </div>
             </div>
+
             <div className="relative">
               {featuredCompetition && (
                 <div className="bg-card rounded-xl p-8 border border-border">
@@ -74,10 +72,8 @@ export default function Landing() {
                     <div className="w-32 h-32 bg-primary/20 rounded-full mx-auto flex items-center justify-center">
                       <i className="fas fa-car text-primary text-4xl"></i>
                     </div>
-                    <h3 className="text-2xl font-bold text-primary" data-testid="text-featured-title">
-                      FEATURED: BMW M3
-                    </h3>
-                    <p className="text-muted-foreground" data-testid="text-progress">
+                    <h3 className="text-2xl font-bold text-primary">FEATURED: BMW M3</h3>
+                    <p className="text-muted-foreground">
                       {featuredCompetition.soldTickets} / {featuredCompetition.maxTickets} sold
                     </p>
                     <div className="bg-muted h-2 rounded-full">
@@ -86,7 +82,7 @@ export default function Landing() {
                         style={{ width: `${(featuredCompetition.soldTickets! / featuredCompetition.maxTickets!) * 100}%` }}
                       ></div>
                     </div>
-                    <p className="text-lg font-semibold" data-testid="text-price">
+                    <p className="text-lg font-semibold">
                       £{featuredCompetition.ticketPrice} per entry
                     </p>
                   </div>
@@ -97,81 +93,49 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Competition Categories */}
+      {/* Tabs Section */}
       <section className="bg-card border-y border-border">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-wrap justify-center gap-4">
-            <button 
-              onClick={() => handleFilterChange("all")}
-              className={`competition-filter px-6 py-3 rounded-lg font-medium transition-colors ${
-                activeFilter === "all" 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground"
-              }`}
-              data-filter="all" 
-              data-testid="filter-all"
-            >
-              ALL COMPETITIONS
-            </button>
-            <button 
-              onClick={() => handleFilterChange("spin")}
-              className={`competition-filter px-6 py-3 rounded-lg font-medium transition-colors ${
-                activeFilter === "spin" 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground"
-              }`}
-              data-filter="spin" 
-              data-testid="filter-spin"
-            >
-              SPIN WHEEL
-            </button>
-            <button 
-              onClick={() => handleFilterChange("scratch")}
-              className={`competition-filter px-6 py-3 rounded-lg font-medium transition-colors ${
-                activeFilter === "scratch" 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground"
-              }`}
-              data-filter="scratch" 
-              data-testid="filter-scratch"
-            >
-              SCRATCH CARDS
-            </button>
-            <button 
-              onClick={() => handleFilterChange("instant")}
-              className={`competition-filter px-6 py-3 rounded-lg font-medium transition-colors ${
-                activeFilter === "instant" 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground"
-              }`}
-              data-filter="instant" 
-              data-testid="filter-instant"
-            >
-              INSTANT WIN
-            </button>
+            {["all", "spin", "scratch", "instant"].map((type) => (
+              <button
+                key={type}
+                onClick={() => handleFilterChange(type)}
+                className={`competition-filter px-6 py-3 rounded-lg font-medium transition-colors ${
+                  activeFilter === type
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                }`}
+              >
+                {type === "all"
+                  ? "ALL COMPETITIONS"
+                  : type === "spin"
+                  ? "SPIN WHEEL"
+                  : type === "scratch"
+                  ? "SCRATCH CARDS"
+                  : "INSTANT WIN"}
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Competitions Grid */}
-      <section id="competitions" className="py-16">
-        <div className="container mx-auto px-4">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-card rounded-xl border border-border p-6 animate-pulse">
-                  <div className="w-full h-48 bg-muted rounded mb-4"></div>
-                  <div className="h-4 bg-muted rounded mb-2"></div>
-                  <div className="h-4 bg-muted rounded w-3/4 mb-4"></div>
-                  <div className="h-10 bg-muted rounded"></div>
-                </div>
-              ))}
-            </div>
+      {/* Competitions Section */}
+      <section id="competitions" className="py-16 min-h-[60vh] flex items-center justify-center">
+        <div className="container mx-auto px-4 text-center">
+          {activeFilter === "instant" ? (
+            <p className="text-xl text-muted-foreground">Instant Win games coming soon! Stay tuned.</p>
+          ) : !isAuthenticated && (activeFilter === "spin" || activeFilter === "scratch") ? (
+            <p className="text-xl text-muted-foreground">Please login to play {activeFilter === "spin" ? "Spin Wheel" : "Scratch Card"}.</p>
+          ) : isLoading ? (
+            <p className="text-muted-foreground">Loading competitions...</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="competitionsGrid">
-              {filteredCompetitions.map((competition) => (
-                <CompetitionCard key={competition.id} competition={competition} />
-              ))}
+              {filteredCompetitions
+                .filter((comp) => activeFilter === "all" || comp.type === activeFilter)
+                .map((competition) => (
+                  <CompetitionCard key={competition.id} competition={competition} />
+                ))}
             </div>
           )}
         </div>
@@ -229,15 +193,13 @@ export default function Landing() {
           </p>
           <div className="max-w-md mx-auto">
             <div className="flex gap-2">
-              <input 
-                type="email" 
-                placeholder="Enter your email..." 
+              <input
+                type="email"
+                placeholder="Enter your email..."
                 className="flex-1 bg-input border border-border text-foreground px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                data-testid="input-newsletter-email"
               />
-              <button 
+              <button
                 className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity"
-                data-testid="button-subscribe"
               >
                 SUBSCRIBE
               </button>

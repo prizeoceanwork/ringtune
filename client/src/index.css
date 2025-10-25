@@ -442,6 +442,36 @@
   }
 }
 
+.payment-icons {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    gap: 5px
+}
+
+.payment-icons li span {
+    background-color: #FFFFFF;
+    height: 27.2px;
+    width: 37px;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center
+}
+
+.payment-icons li span svg {
+    max-width: 35px;
+    height: auto
+}
+
 /* Print styles */
 @media print {
   .no-print {
