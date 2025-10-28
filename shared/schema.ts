@@ -82,6 +82,10 @@ export const orders = pgTable("orders", {
   paymentMethod: varchar("payment_method").notNull(),
   status: varchar("status", { enum: ["pending", "completed", "failed", "expired"] }).default("pending"),
   stripePaymentIntentId: varchar("stripe_payment_intent_id"),
+   walletAmount: decimal("wallet_amount", { precision: 10, scale: 2 }).default("0.00"),
+  pointsAmount: decimal("points_amount", { precision: 10, scale: 2 }).default("0.00"),
+  cashflowsAmount: decimal("cashflows_amount", { precision: 10, scale: 2 }).default("0.00"),
+  paymentBreakdown: text("payment_breakdown"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -108,6 +112,14 @@ export const winners = pgTable("winners", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+
+export const spinUsage = pgTable("spin_usage", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: uuid("order_id").notNull().references(() => orders.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  usedAt: timestamp("used_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertCompetitionSchema = createInsertSchema(competitions);
 export const insertTicketSchema = createInsertSchema(tickets);
@@ -127,6 +139,7 @@ export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Winner = typeof winners.$inferSelect;
+export type SpinUsage = typeof spinUsage.$inferInsert;
 
 // Registration and login schemas
 export const registerUserSchema = createInsertSchema(users).pick({

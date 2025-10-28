@@ -130,7 +130,7 @@ export default function Landing() {
           ) : isLoading ? (
             <p className="text-muted-foreground">Loading competitions...</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="competitionsGrid">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4  gap-6" id="competitionsGrid">
               {filteredCompetitions
                 .filter((comp) => activeFilter === "all" || comp.type === activeFilter)
                 .map((competition) => (
@@ -180,7 +180,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <Testimonials />
+      {/* <Testimonials /> */}
 
       {/* Newsletter Signup */}
       <section className="bg-card py-16">

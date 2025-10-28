@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { User } from "@shared/schema";
 import logoImage from "@assets/Logo_1758887059353.gif";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -16,6 +16,18 @@ export default function Header() {
   const { toast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+
+  const { data: userData } = useQuery({
+  queryKey: ["/api/auth/user"],
+  queryFn: async () => {
+    const res = await apiRequest("GET", "/api/auth/user");
+    return res.json();
+  },
+  enabled: !!isAuthenticated,
+});
+
+
+  
   const LogoutMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/auth/logout");
@@ -38,7 +50,10 @@ export default function Header() {
     LogoutMutation.mutate();
   };
 
-  return (
+  const ringtonePoints = userData?.ringtonePoints ?? user?.ringtonePoints ?? 0;
+
+
+   return (
     <header className="bg-card border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
@@ -50,7 +65,6 @@ export default function Header() {
                 alt="RingToneRiches Logo"
                 className="w-36 h-18 md:w-48 md:h-24 object-contain"
               />
-             
             </div>
           </Link>
 
@@ -75,17 +89,27 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
+                {/* ADD RINGTONE POINTS BUTTON HERE */}
+                <Link href="/ringtune-points">
+                  <button className="bg-muted text-muted-foreground px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors">
+                    <i className="fas fa-music"></i>
+                    <span>{ringtonePoints.toLocaleString()}</span>
+                  </button>
+                </Link>
+                
                 <Link href="/wallet">
-                  <button className="bg-muted  text-muted-foreground px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <button className="bg-muted text-muted-foreground px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors">
                     <i className="fas fa-wallet"></i>
                     <span>£{parseFloat(user?.balance || "0").toFixed(2)}</span>
                   </button>
                 </Link>
+                
                 <Link href="/account">
                   <button className="bg-primary hidden md:block text-primary-foreground px-3 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity">
                     MY ACCOUNT
                   </button>
                 </Link>
+                
                 <button
                   onClick={handleLogout}
                   className="hidden md:inline border border-muted-foreground text-muted-foreground px-3 py-2 rounded-lg font-medium hover:bg-muted-foreground hover:text-background transition-colors"
@@ -127,40 +151,44 @@ export default function Header() {
               </span>
             </Link>
             <Link href="/winners">
-              <span className="block  mb-2  text-foreground hover:text-primary font-medium">
+              <span className="block mb-2 text-foreground hover:text-primary font-medium">
                 PAST WINNERS
               </span>
             </Link>
             <Link to="#">
-            <span className="block text-foreground hover:text-primary font-medium">
-              JACKPOTS
-            </span>
+              <span className="block text-foreground hover:text-primary font-medium">
+                JACKPOTS
+              </span>
             </Link>
 
             <hr className="border-border my-2" />
 
             {isAuthenticated ? (
               <>
+                {/* FIXED MOBILE VERSION - Remove 'hidden' classes */}
                 <Link href="/wallet">
-                  <button className="bg-muted hidden md:hidden mt-3 mb-3 text-muted-foreground px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <button className="w-full bg-muted text-muted-foreground px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors mb-2">
                     <i className="fas fa-wallet"></i>
-                    <span>£{parseFloat(user?.balance || "0").toFixed(2)} </span>
+                    <span>£{parseFloat(user?.balance || "0").toFixed(2)}</span>
                   </button>
                 </Link>
-                  <Link href="/ringtone-points">
-      <button className="bg-muted text-muted-foreground px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors">
-        <i className="fas fa-music"></i>
-        <span>{user?.ringtonePoints?.toLocaleString() || 0} pts</span>
-      </button>
-    </Link>
+                
+                <Link href="/ringtone-points">
+                  <button className="w-full bg-muted text-muted-foreground px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors mb-2">
+                    <i className="fas fa-music"></i>
+                    <span>{ringtonePoints.toLocaleString()}</span>
+                  </button>
+                </Link>
+                
                 <Link href="/account">
-                  <button className="bg-primary md:hidden  text-primary-foreground px-3 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity">
+                  <button className="w-full bg-primary text-primary-foreground px-3 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity mb-2">
                     MY ACCOUNT
                   </button>
                 </Link>
+                
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left md:hidden text-destructive font-medium hover:underline"
+                  className="w-full text-left text-destructive font-medium hover:underline"
                 >
                   Logout
                 </button>

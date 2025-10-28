@@ -22,6 +22,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
     { label: "Audi", color: "#0CBDF8", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047801/Audi_nw9i5h.png", amount: "3000 Ringtones" },
     { label: "Bentley", color: "#66C72D", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047801/Bentley_nysafz.png", amount: 0.25 },
     { label: "BMW", color: "#D69E1C", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047801/BMW_i0tqyy.png", amount: 0.50 },
+    { label: "Mini", color: "#57d61cff", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047805/Mini_xptdev.png", amount: 0.55 },
     { label: "Nice Try", color: "#4B5563", icon: "❌", amount: 0 },
     
     { label: "Ferrari", color: "#C2586D", icon: "https://res.cloudinary.com/dziy5sjas/image/upload/v1761047802/Ferrari_dah6eg.png", amount: 0.50 },
@@ -48,7 +49,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
   ];
   
   // Load all images
-  const [rotation, setRotation] = useState((2 * Math.PI) / segments.length/ 1.5);
+  const [rotation, setRotation] = useState((2 * Math.PI) / segments.length/4.5);
   useEffect(() => {
     const loadImages = async () => {
       const images: { [key: string]: HTMLImageElement } = {};
@@ -218,7 +219,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
   }, [rotation, isSpinning, winner, loadedImages]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden z-10">
 
       {/* background video */}
       <video
@@ -232,11 +233,11 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
 
       <div className="relative w-full max-w-2xl aspect-square flex items-center justify-center z-10">
 
-         {ticketCount !== undefined && (
+         {/* {ticketCount !== undefined && (
     <div className="absolute -top-20 right-65 bg-yellow-400 text-black px-3 py-2 rounded-sm text-sm font-bold shadow-md z-20">
        Available Ticket{ticketCount !== 1 ? "s" : ""} :{ticketCount} 
     </div>
-  )}
+  )} */}
         <img
           src="https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/wheel_basnqc.png"
           alt="Wheel Ring"
@@ -247,6 +248,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
           className="w-[88%] h-[88%] rounded-full"
         />
 
+       
         {/* show video in center when spinning or idle (no winner) */}
         {(winner || isSpinning) && (
           <video
@@ -281,12 +283,47 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
           </button>
         )}
       </div>
-
+       
       <style>{`
         .clip-triangle {
           clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
         }
       `}</style>
+      <div className="h-full sm:h-[300px] w-full sm:w-[400px] bg-black mb-0 sm:mb-6 z-20">
+
+      <div className="flex flex-col items-center gap-3 mt-8 w-full max-w-xs z-20 relative">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="w-full text-center">
+            <div className="flex justify-between text-yellow-300 font-semibold text-lg w-3/4 mx-auto">
+              <span>Spin {i + 1}</span>
+              <span className="text-gray-300  text-sm">NOT SPUN</span>
+            </div>
+            <div className="h-[2px] bg-yellow-400 mt-2 mb-1 w-3/4 mx-auto"></div>
+          </div>
+        ))}
+      </div>
+
+
+      {/* Buttons */}
+      <div className="flex justify-center  gap-6 mt-6 relative z-20">
+        <button
+          onClick={spinWheel}
+          disabled={isSpinning}
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-6 py-3 text-sm rounded-sm shadow-sm disabled:opacity-50"
+        >
+          SPIN
+        </button>
+        <button
+          onClick={() => alert('Reveal pressed')}
+          className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-6 py-3 text-xs rounded-sm shadow-sm"
+        >
+          REVEAL ALL
+        </button>
+      </div>
+      </div>
+   {/* Spins list (vertical) */}
+
+
     </div>
   );
 };

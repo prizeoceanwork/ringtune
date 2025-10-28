@@ -165,7 +165,12 @@ const hasCompletedRef = useRef(false);
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = "#999";
+    const gradient = ctx.createLinearGradient(0, 0, containerWidth, containerHeight);
+
+// Add color stops (start and end colors)
+gradient.addColorStop(0, "#cca60eff"); // coral
+gradient.addColorStop(1, "#e67e22"); // dodger blue
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, containerWidth, containerHeight);
     ctx.fillStyle = "#fff";
     
@@ -262,8 +267,29 @@ const hasCompletedRef = useRef(false);
   }
 
   return (
-  <div className="flex items-center justify-center p-4 min-h-screen">
-      <div className="p-4 sm:p-6 w-full max-w-4xl relative rounded-xl shadow-lg bg-background">
+  <div className="relative flex items-center justify-center p-4 min-h-screen overflow-hidden">
+      <video
+    autoPlay
+    loop
+    muted
+    playsInline
+    preload="auto"
+    className="absolute inset-0 w-full h-full object-cover"
+    style={{
+      imageRendering: "auto",
+      transform: "scale(1.02)", // Prevent micro-gaps
+      filter: "brightness(1)", // keep clear brightness
+    }}
+  >
+    <source
+      src="https://res.cloudinary.com/dziy5sjas/video/upload/f_auto,q_auto:best/v1761649166/WhatsApp_Video_2025-10-25_at_3.50.25_PM_drcoh0.mp4"
+      type="video/mp4"
+    />
+  </video>
+
+  {/* 🪄 Optional subtle overlay to blend edges */}
+  <div className="absolute inset-0 bg-black/20"></div>
+      <div className="relative z-10 p-4 sm:p-6 w-full max-w-4xl  ">
         <div className="flex justify-center mb-4 sm:mb-5">
           {scratchTicketCount !== undefined && (
             <div className="bg-yellow-400 w-fit text-black px-3 py-2 rounded-sm text-sm font-bold shadow-md z-20">
@@ -274,7 +300,7 @@ const hasCompletedRef = useRef(false);
         
         <div className="text-center mb-4 sm:mb-6">
           <h2 className="text-2xl sm:text-3xl font-bold mb-2">Scratch & Match</h2>
-          <p className="text-muted-foreground text-sm sm:text-base">Match 3 same images to win!</p>
+          <p className="text-white text-sm sm:text-base">Match 3 same images to win!</p>
         </div>
 
         {/* Larger responsive container for canvas */}
@@ -333,9 +359,7 @@ const hasCompletedRef = useRef(false);
           />
         </div>
 
-        <div className="text-center mt-4 sm:mt-6">
-          <p className="text-sm text-muted-foreground">Scratched: {percentScratched}%</p>
-        </div>
+        
       </div>
     </div>
   );

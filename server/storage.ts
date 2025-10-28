@@ -5,6 +5,7 @@ import {
   orders,
   transactions,
   winners,
+  spinUsage,
   type User,
   type UpsertUser,
   type Competition,
@@ -16,6 +17,7 @@ import {
   type Transaction,
   type InsertTransaction,
   type Winner,
+  type SpinUsage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sum, sql } from "drizzle-orm";
@@ -47,7 +49,19 @@ export interface IStorage {
   getOrder(id: string): Promise<Order | undefined>;
   getUserOrders(userId: string): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<Order>;
-  
+   // NEW: Update order payment information
+  updateOrderPaymentInfo(
+    id: string, 
+    paymentInfo: {
+      paymentMethod: string;
+      walletAmount?: string;
+      pointsAmount?: string;
+      cashflowsAmount?: string;
+      paymentBreakdown?: string;
+    }
+  ): Promise<Order>;
+
+
   // Transaction operations
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: string): Promise<Transaction[]>;
@@ -55,6 +69,9 @@ export interface IStorage {
   // Winner operations
   getRecentWinners(limit: number): Promise<Winner[]>;
   createWinner(winner: Omit<Winner, 'id' | 'createdAt'>): Promise<Winner>;
+
+   recordSpinUsage(orderId: string, userId: string): Promise<void>;
+   getSpinsUsed(orderId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -214,6 +231,32 @@ async getUserRingtonePoints(userId: string): Promise<number> {
     return order;
   }
 
+   // NEW: Update order payment information
+  async updateOrderPaymentInfo(
+    id: string, 
+    paymentInfo: {
+      paymentMethod: string;
+      walletAmount?: string;
+      pointsAmount?: string;
+      cashflowsAmount?: string;
+      paymentBreakdown?: string;
+    }
+  ): Promise<Order> {
+    const [order] = await db
+      .update(orders)
+      .set({ 
+        paymentMethod: paymentInfo.paymentMethod,
+        walletAmount: paymentInfo.walletAmount || "0.00",
+        pointsAmount: paymentInfo.pointsAmount || "0.00", 
+        cashflowsAmount: paymentInfo.cashflowsAmount || "0.00",
+        paymentBreakdown: paymentInfo.paymentBreakdown,
+        updatedAt: new Date()
+      })
+      .where(eq(orders.id, id))
+      .returning();
+    return order;
+  }
+
   // Transaction operations
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
     const [created] = await db.insert(transactions).values(transaction).returning();
@@ -246,6 +289,23 @@ async createWinner(winner: Omit<Winner, "id" | "createdAt">): Promise<Winner> {
   }).returning();
   return created;
 }
+
+async recordSpinUsage(orderId: string, userId: string): Promise<void> {
+    await db.insert(spinUsage).values({
+      orderId,
+      userId,
+      usedAt: new Date()
+    });
+  }
+
+  async getSpinsUsed(orderId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(spinUsage)
+      .where(eq(spinUsage.orderId, orderId));
+    
+    return result[0]?.count || 0;
+  }
 }
 
 export const storage = new DatabaseStorage();

@@ -35,7 +35,7 @@ export default function SpinWheelPage() {
   const [gameResult, setGameResult] = useState<any>(null);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     const [filteredCompetitions, setFilteredCompetitions] = useState<Competition[]>([]);
-    const [activeFilter, setActiveFilter] = useState("all");
+const [activeFilter, setActiveFilter] = useState("spin");
   const [, setLocation] = useLocation();
   
     useEffect(() => {
@@ -72,6 +72,7 @@ const handleFilterChange = (filterType: string) => {
   const playSpinWheelMutation = useMutation({
     mutationFn: async (data: { winnerPrize: any }) => {
       const response = await apiRequest("POST", "/api/play-spin-wheel", data);
+      console.log(data)
       return response.json();
     },
     onSuccess: (result) => {
@@ -115,6 +116,7 @@ const handleFilterChange = (filterType: string) => {
     playSpinWheelMutation.mutate({ winnerPrize });
   };
 
+ 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
@@ -169,23 +171,43 @@ const handleFilterChange = (filterType: string) => {
         />
       </section>
 
-      <Dialog open={isResultModalOpen} onOpenChange={setIsResultModalOpen}>
-        <DialogContent className="max-w-md flex flex-col justify-center items-center text-center">
-          <DialogHeader>
-            <DialogTitle className="text-3xl font-bold">
-              {gameResult?.prize?.amount > 0 ? "🎉 You Won!" : "😔 Better Luck Next Time"}
-            </DialogTitle>
-          </DialogHeader>
-          <DialogFooter>
-            <button
-              onClick={() => setIsResultModalOpen(false)}
-              className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90"
-            >
-              Close
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+<Dialog open={isResultModalOpen} onOpenChange={setIsResultModalOpen}>
+  <DialogContent className="max-w-md flex flex-col justify-center items-center text-center">
+    <DialogHeader>
+      <DialogTitle className="text-3xl font-bold">
+        {gameResult?.prize?.amount && 
+         gameResult.prize.amount !== 0 && 
+         gameResult.prize.amount !== "0" 
+          ? "🎉 You Won!" 
+          : "😔 Better Luck Next Time"
+        }
+      </DialogTitle>
+
+      {gameResult?.prize && (
+        <div className="mt-4 text-lg text-muted-foreground">
+          <p className="font-semibold">{gameResult.prize.brand}</p>
+          <p className="text-primary">
+            {(() => {
+              const amount = gameResult.prize.amount;
+              if (!amount || amount === 0 || amount === "0") {
+                return "No prize this time";
+              }
+              return typeof amount === 'number' ? `€${amount}` : amount;
+            })()}
+          </p>
+        </div>
+      )}
+    </DialogHeader>
+    <DialogFooter>
+      <button
+        onClick={() => setIsResultModalOpen(false)}
+        className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90"
+      >
+        Close
+      </button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
       <Footer />
     </div>

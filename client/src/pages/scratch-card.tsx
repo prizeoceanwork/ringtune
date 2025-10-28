@@ -33,7 +33,7 @@ export default function ScratchCardPage() {
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
     const [filteredCompetitions, setFilteredCompetitions] = useState<Competition[]>([]);
-      const [activeFilter, setActiveFilter] = useState("all");
+      const [activeFilter, setActiveFilter] = useState("scratch");
     const [, setLocation] = useLocation();
     
       useEffect(() => {

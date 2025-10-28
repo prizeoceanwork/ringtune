@@ -65,7 +65,7 @@ export default function CompetitionCard({ competition, authenticated = false }: 
             data-testid={`button-enter-${competition.id}`}
           >
             {competition.type === "scratch" ? "SCRATCH NOW" : 
-             competition.type === "spin" ? "SPIN NOW" : 
+             competition.type === "spin" ? "ENTER NOW" : 
              "ENTER NOW"}
           </button>
         </div>

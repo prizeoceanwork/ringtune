@@ -486,3 +486,43 @@
     @apply border border-gray-300;
   }
 }
+
+
+/* 🎨 Slider track */
+input[type="range"] {
+  appearance: none;
+  width: 100%;
+  border-radius: 8px;
+  outline: none;
+}
+
+/* 🟡 WebKit (Chrome, Edge, Safari) thumb */
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  height: 24px;         /* thumb height */
+  width: 24px;          /* thumb width */
+  border-radius: 50%;
+  background: #facc15;  /* yellow thumb */
+  border: 3px solid white;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* 🟢 Firefox support */
+input[type="range"]::-moz-range-thumb {
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  background: #facc15;
+  border: 3px solid white;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}

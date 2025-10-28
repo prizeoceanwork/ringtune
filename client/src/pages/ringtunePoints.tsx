@@ -10,7 +10,7 @@ export default function RingtonePoints() {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [conversionAmount, setConversionAmount] = useState("1000");
+  const [conversionAmount, setConversionAmount] = useState("100");
 
 
 
@@ -63,10 +63,10 @@ export default function RingtonePoints() {
     return;
   }
 
-  if (points < 1000) {
+  if (points < 100) {
     toast({
       title: "Minimum Conversion",
-      description: "Minimum conversion is 1000 points",
+      description: "Minimum conversion is 100 points",
       variant: "destructive",
     });
     return;
@@ -75,7 +75,7 @@ export default function RingtonePoints() {
   convertMutation.mutate(points);
 };
   const ringtonePoints = userData?.ringtonePoints || 0;
-  const maxConvertible = Math.floor(ringtonePoints / 1000) * 1000;
+  const maxConvertible = Math.floor(ringtonePoints / 100) * 100;
 
 
   return (
@@ -113,11 +113,11 @@ export default function RingtonePoints() {
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Equivalent Value:</span>
           <span className="text-lg font-semibold">
-            €{(ringtonePoints / 1000).toFixed(2)}
+            €{(ringtonePoints / 100).toFixed(2)}
           </span>
         </div>
 
-        {ringtonePoints >= 1000 && (
+        {ringtonePoints >= 100 && (
           <div className="space-y-3 pt-4 border-t border-border">
             <label className="text-sm font-medium">Convert to Wallet</label>
             <div className="flex gap-2">
@@ -141,7 +141,7 @@ export default function RingtonePoints() {
             </div>
             
             <div className="text-sm text-muted-foreground">
-              {conversionAmount} points = €{(Number(conversionAmount) / 1000).toFixed(2)}
+              {conversionAmount} points = €{(Number(conversionAmount) / 100).toFixed(2)}
             </div>
 
             <button
@@ -154,9 +154,9 @@ export default function RingtonePoints() {
           </div>
         )}
 
-        {ringtonePoints < 1000 && (
+        {ringtonePoints < 100 && (
           <div className="text-sm text-muted-foreground pt-4 border-t border-border">
-            You need at least 1000 points to convert to wallet balance.
+            You need at least 100 points to convert to wallet balance.
           </div>
         )}
       </div>

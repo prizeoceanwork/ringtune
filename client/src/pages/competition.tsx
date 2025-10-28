@@ -15,11 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-
+import { useRef } from "react";
 
 export default function CompetitionPage() {
+  const rangeRef = useRef<HTMLDivElement | null>(null);
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -30,33 +32,21 @@ export default function CompetitionPage() {
   const queryClient = useQueryClient();
   const [quantity, setQuantity] = useState(1);
   const [showQuiz, setShowQuiz] = useState(false);
-const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
+  const [isPostalModalOpen, setIsPostalModalOpen] = useState(false);
+  const quizQuestion = {
+    question:
+      "My Train Journey Takes Me 55 Minutes, I Catch My Train At 6am, What Time Do I Arrive?",
+    options: ["6:30am", "6:45am", "6:55am", "7:00am"],
+    correct: "6:55am",
+  };
 
-
-const quizQuestions = [
-  { question: "What color is the sky on a clear day?", options: ["Green", "Blue", "Red", "Yellow"], correct: "Blue" },
-  { question: "How many legs does a cat have?", options: ["2", "3", "4", "5"], correct: "4" },
-  { question: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter"], correct: "Mars" },
-  { question: "What do bees make?", options: ["Milk", "Honey", "Juice"], correct: "Honey" },
-  { question: "Which ocean is the largest?", options: ["Atlantic", "Indian", "Pacific"], correct: "Pacific" },
-  { question: "What is 2 + 2?", options: ["3", "4", "5"], correct: "4" },
-  { question: "Which animal says 'Moo'?", options: ["Dog", "Cat", "Cow"], correct: "Cow" },
-  { question: "Which is a fruit?", options: ["Carrot", "Apple", "Potato"], correct: "Apple" },
-  { question: "What shape has 3 sides?", options: ["Triangle", "Square", "Circle"], correct: "Triangle" },
-  { question: "How many days are in a week?", options: ["5", "6", "7"], correct: "7" },
-];
-const [quizQuestion, setQuizQuestion] = useState(quizQuestions[0]);
-
-// When user clicks the button → pick a random question
-const handleOpenQuiz = () => {
-  const randomIndex = Math.floor(Math.random() * quizQuestions.length);
-  setQuizQuestion(quizQuestions[randomIndex]);
-  setSelectedAnswer(null);
-  setIsAnswerCorrect(null);
-  setShowQuiz(true);
-};
-
+  const handleOpenQuiz = () => {
+    setSelectedAnswer(null);
+    setIsAnswerCorrect(null);
+    setShowQuiz(true);
+  };
 
   const { data: competition, isLoading } = useQuery<Competition>({
     queryKey: ["/api/competitions", id],
@@ -68,11 +58,10 @@ const handleOpenQuiz = () => {
     enabled: isAuthenticated,
   });
 
-const isSoldOut =
-  competition?.maxTickets && competition.maxTickets > 0
-    ? (competition.soldTickets ?? 0) >= competition.maxTickets
-    : false;
-
+  const isSoldOut =
+    competition?.maxTickets && competition.maxTickets > 0
+      ? (competition.soldTickets ?? 0) >= competition.maxTickets
+      : false;
 
   // Filter tickets for this competition
   const availableTickets = userTickets.filter(
@@ -86,25 +75,26 @@ const isSoldOut =
       return response.json();
     },
     onSuccess: (data) => {
-  if (data.paymentMethod === "wallet") {
-   console.log("Wallet payment successful");
-   console.log(data);
-    toast({
-      title: "Success",
-      description: "Your ticket(s) have been purchased using your wallet!",
-    });
-    // ✅ Refresh user, tickets, and transactions data
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/competitions", id] });
-    queryClient.invalidateQueries({ queryKey: ["/api/competitions"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/user/orders"] });
-    
-  } else {
-    setLocation(`/checkout/${data.orderId}?client_secret=${data.clientSecret}&quantity=${quantity}`);
-  }
-},
+      if (data.paymentMethod === "wallet") {
+        console.log("Wallet payment successful");
+        console.log(data);
+        toast({
+          title: "Success",
+          description: "Your ticket(s) have been purchased using your wallet!",
+        });
+        // ✅ Refresh user, tickets, and transactions data
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/competitions", id] });
+        queryClient.invalidateQueries({ queryKey: ["/api/competitions"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/orders"] });
+      } else {
+        setLocation(
+          `/checkout/${data.orderId}?client_secret=${data.clientSecret}&quantity=${quantity}`
+        );
+      }
+    },
 
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -126,51 +116,49 @@ const isSoldOut =
     },
   });
 
-const handlePurchase = () => {
-  if (!isAuthenticated) {
-    window.location.href = "/login";
-    return;
-  }
-
-  if (!competition) return;
-
-  // 🧠 Normalize type
-  const type = competition.type?.toLowerCase();
-
-  // ✅ Only check ticket limits for INSTANT competitions
-  if (type === "instant") {
-    const remainingTickets =
-      (competition.maxTickets ?? 0) - (competition.soldTickets ?? 0);
-
-    if (remainingTickets <= 0) {
-      toast({
-        title: "Sold Out",
-        description: "All tickets for this competition are sold out.",
-        variant: "destructive",
-      });
+  const handlePurchase = () => {
+    if (!isAuthenticated) {
+      window.location.href = "/login";
       return;
     }
 
-    if (quantity > remainingTickets) {
-      toast({
-        title: "Too Many Tickets",
-        description: `Only ${remainingTickets} ticket${
-          remainingTickets > 1 ? "s" : ""
-        } remaining. Please reduce your quantity.`,
-        variant: "destructive",
-      });
-      return;
+    if (!competition) return;
+
+    // 🧠 Normalize type
+    const type = competition.type?.toLowerCase();
+
+    // ✅ Only check ticket limits for INSTANT competitions
+    if (type === "instant") {
+      const remainingTickets =
+        (competition.maxTickets ?? 0) - (competition.soldTickets ?? 0);
+
+      if (remainingTickets <= 0) {
+        toast({
+          title: "Sold Out",
+          description: "All tickets for this competition are sold out.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (quantity > remainingTickets) {
+        toast({
+          title: "Too Many Tickets",
+          description: `Only ${remainingTickets} ticket${
+            remainingTickets > 1 ? "s" : ""
+          } remaining. Please reduce your quantity.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
-  }
 
-  // 🟢 Proceed with purchase
-  purchaseTicketMutation.mutate({
-    competitionId: competition.id,
-    quantity,
-  });
-};
-
-
+    // 🟢 Proceed with purchase
+    purchaseTicketMutation.mutate({
+      competitionId: competition.id,
+      quantity,
+    });
+  };
 
   const totalPrice = competition
     ? parseFloat(competition.ticketPrice) * quantity
@@ -211,23 +199,26 @@ const handlePurchase = () => {
     );
   }
 
+  const handleSubmitAnswer = () => {
+    if (selectedAnswer === quizQuestion.correct) {
+      setIsAnswerCorrect(true);
+      setShowQuiz(false);
+      handlePurchase(); // ✅ proceed with purchase if correct
+    } else {
+      setIsAnswerCorrect(false);
+      toast({
+        title: "Wrong Answer ❌",
+        description: "That’s not correct! Try again next time.",
+        variant: "destructive",
+      });
+      setShowQuiz(false);
+    }
+  };
 
-const handleSubmitAnswer = () => {
-  if (selectedAnswer === quizQuestion.correct) {
-    setIsAnswerCorrect(true);
-    setShowQuiz(false);
-    handlePurchase(); // ✅ Proceed to purchase if correct
-  } else {
-    setIsAnswerCorrect(false);
-    toast({
-      title: "Wrong Answer ❌",
-      description: "That’s not correct! Try another competition.",
-      variant: "destructive",
-    });
-    setShowQuiz(false);
-    setTimeout(() => setLocation("/"), 1500); // ⬅️ Redirect to competitions page
-  }
-};
+  const scrollToRange = () => {
+    rangeRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
@@ -293,23 +284,6 @@ const handleSubmitAnswer = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Trustpilot Reviews */}
-                <div className="bg-primary/10 rounded-xl p-6 border border-primary/20">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="flex text-primary">
-                      {[...Array(5)].map((_, i) => (
-                        <i key={i} className="fas fa-star"></i>
-                      ))}
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      Trustpilot
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Rated 4.7 • Based on 2,099 reviews
-                  </p>
-                </div>
               </div>
 
               {/* Right: Purchase Form */}
@@ -322,13 +296,11 @@ const handleSubmitAnswer = () => {
                     {competition.title}
                   </h1>
 
-                 {competition.description?.trim() ? (
-  <div className="text-muted-foreground mb-6 overflow-y-scroll max-h-96 whitespace-pre-line leading-relaxed space-y-2">
-    {competition.description}
-  </div>
-) : null}
-
-
+                  {competition.description?.trim() ? (
+                    <div className="text-muted-foreground mb-6 overflow-y-scroll max-h-96 whitespace-pre-line leading-relaxed space-y-2">
+                      {competition.description}
+                    </div>
+                  ) : null}
 
                   <div className="space-y-6">
                     <div className="flex items-center justify-between text-2xl font-bold">
@@ -340,7 +312,7 @@ const handleSubmitAnswer = () => {
                       </span>
                     </div>
 
-                    <div className="space-y-4">
+                    {/* <div className="space-y-4">
                       <label className="text-sm font-medium">
                         Choose how many tickets you would like to purchase:
                       </label>
@@ -349,7 +321,7 @@ const handleSubmitAnswer = () => {
                           <input
                             type="range"
                             min="1"
-                            max="20"
+                            max="1000"
                             value={quantity}
                             onChange={(e) =>
                               setQuantity(Number(e.target.value))
@@ -364,14 +336,14 @@ const handleSubmitAnswer = () => {
                           />
                           <div className="flex justify-between text-xs text-muted-foreground mt-1">
                             <span>1</span>
-                            <span>20</span>
+                            <span>1000</span>
                           </div>
                         </div>
                         <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-bold min-w-[60px] text-center">
                           {quantity}
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
                     <div className="bg-muted rounded-xl p-4">
                       <div className="flex justify-between items-center">
@@ -390,67 +362,64 @@ const handleSubmitAnswer = () => {
                     </div>
 
                     {availableTickets.length > 0 ? (
-                      <div className="space-y-4">
-                        <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-4 text-center">
-                          <p className="text-green-400 font-medium">
-                            ✅ You have {availableTickets.length} ticket
-                            {availableTickets.length > 1 ? "s" : ""} for this competition!
-                          </p>
-                        </div>
+                  <div className="space-y-4">
+                    <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-4 text-center">
+                      <p className="text-green-400 font-medium">
+                        ✅ You have {availableTickets.length}  {competition.type === "spin"
+                ? "Spins"
+                : competition.type === "scratch"
+                ? "Scratches"
+                : "Tickets"}{" "}
+            
+                       
+                      </p>
+                    </div>
 
-                        {competition.type === "instant" ? (
-                          // 🟢 Instant prize: no play button, just buy more
-                           <button
-  onClick={() => setShowQuiz(true)}
-  disabled={isSoldOut || purchaseTicketMutation.isPending}
-  className={`w-full py-4 rounded-lg font-bold text-lg transition-opacity ${
-    isSoldOut
-      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-      : "bg-primary text-primary-foreground hover:opacity-90"
-  }`}
-  data-testid="button-purchase"
->
-  {isSoldOut
-    ? "SOLD OUT"
-    : purchaseTicketMutation.isPending
-    ? "Processing..."
-    : "ADD COMPETITION ENTRY"}
-</button>
+                    <button
+                      onClick={scrollToRange}
+                      disabled={isSoldOut || purchaseTicketMutation.isPending}
+                      className={`w-full py-4 rounded-lg font-bold text-lg transition-opacity ${
+                        isSoldOut
+                          ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                          : "bg-primary text-primary-foreground hover:opacity-90"
+                      }`}
+                      data-testid="button-purchase"
+                    >
+                      {isSoldOut
+                        ? "SOLD OUT"
+                        : purchaseTicketMutation.isPending
+                        ? "Processing..."
+                        : competition.type === "instant"
+                        ? "ADD COMPETITION ENTRY"
+                        : "BUY MORE"}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    // only two possible behaviors
+                    onClick={
+                      competition.type === "instant"
+                        ? scrollToRange
+                        : handleOpenQuiz
+                    }
+                    disabled={isSoldOut || purchaseTicketMutation.isPending}
+                    className={`w-full py-4 rounded-lg font-bold text-lg transition-opacity ${
+                      isSoldOut
+                        ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                        : "bg-primary text-primary-foreground hover:opacity-90"
+                    }`}
+                    data-testid="button-purchase"
+                  >
+                    {isSoldOut
+                      ? "SOLD OUT"
+                      : purchaseTicketMutation.isPending
+                      ? "Processing..."
+                      : competition.type === "instant"
+                      ? "ADD COMPETITION ENTRY"
+                      : "BUY NOW"}
+                  </button>
+                )}
 
-                        ) : (
-                          // 🌀 Spin / Scratch competitions
-                          <div className="w-full bg-muted rounded-lg p-4 text-center">
-                           
-                            <button
-                              onClick={handlePurchase}
-                              disabled={purchaseTicketMutation.isPending}
-                              className="bg-primary w-full text-primary-foreground py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-                              data-testid="button-purchase-more"
-                            >
-                              {purchaseTicketMutation.isPending ? "Processing..." : "BUY MORE"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <button
-onClick={handleOpenQuiz}
-  disabled={isSoldOut || purchaseTicketMutation.isPending}
-  className={`w-full py-4 rounded-lg font-bold text-lg transition-opacity ${
-    isSoldOut
-      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-      : "bg-primary text-primary-foreground hover:opacity-90"
-  }`}
-  data-testid="button-purchase"
->
-  {isSoldOut
-    ? "SOLD OUT"
-    : purchaseTicketMutation.isPending
-    ? "Processing..."
-    : "ADD COMPETITION ENTRY"}
-</button>
-
-                    )}
                   </div>
                 </div>
 
@@ -465,6 +434,81 @@ onClick={handleOpenQuiz}
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+
+      {/* 🎯 Range & Purchase Section */}
+      <section ref={rangeRef} className="py-16 bg-muted">
+        <div className="container mx-auto px-4 text-center max-w-2xl">
+          <h2 className="text-2xl font-bold mb-6">Select Your Entries</h2>
+
+          {/* Quantity Range */}
+          <div className="space-y-4 mb-8">
+           <label className="text-sm font-medium mb-2 block">
+              How many{" "}
+              {competition.type === "spin"
+                ? "Spins"
+                : competition.type === "scratch"
+                ? "Scratches"
+                : "Tickets"}{" "}
+              do you want to buy?
+            </label>
+
+           <input
+              type="range"
+              min="1"
+              max="1000"
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+              className="slider-thumb w-full appearance-none cursor-pointer"
+              data-testid="slider-quantity"
+              style={{
+                height: "12px", // track thickness
+                borderRadius: "8px",
+                background: `linear-gradient(to right, #facc15 ${
+                  ((quantity - 1) * 100) / (1000 - 1)
+                }%, #e5e7eb ${((quantity - 1) * 100) / (1000 - 1)}%)`,
+              }}
+            />
+
+            {competition.type === "spin" ? (
+              <div className="text-lg font-semibold">{quantity} Spin</div>
+            ) : competition.type === "scratch" ? (
+              <div className="text-lg font-semibold">{quantity} Scratch</div>
+            ) : (
+              <div className="text-lg font-semibold">{quantity} Tickets</div>
+            )}
+            <div className="text-sm text-muted-foreground">
+              Total: £
+              {(parseFloat(competition.ticketPrice) * quantity).toFixed(2)}
+            </div>
+          </div>
+
+          {/* Dynamic Buy Button */}
+          <div className="w-full flex justify-center">
+
+          <button
+            onClick={handleOpenQuiz}
+            disabled={isSoldOut || purchaseTicketMutation.isPending}
+            className="bg-primary w-fit text-primary-foreground px-8 py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 "
+          >
+            {isSoldOut
+              ? "SOLD OUT"
+              : purchaseTicketMutation.isPending
+              ? "Processing..."
+              : competition.type === "spin"
+              ? "BUY SPIN"
+              : competition.type === "scratch"
+              ? "BUY SCRATCH"
+              : "ENTER NOW"}
+          </button>
+          
+          </div>
+          <div    className="mt-5 text-sm text-muted-foreground underline cursor-pointer hover:text-primary"
+          onClick={() => setIsPostalModalOpen(true)}>
+            Free postal entry route
           </div>
         </div>
       </section>
@@ -487,43 +531,85 @@ onClick={handleOpenQuiz}
           </button>
         </div>
       </section>
-<Dialog open={showQuiz} onOpenChange={setShowQuiz}>
-  <DialogContent className="max-w-md">
-    <DialogHeader>
-      <DialogTitle className="text-xl font-bold text-center">
-        Answer to Proceed
-      </DialogTitle>
-    </DialogHeader>
-    <div className="space-y-4">
-      <p className="text-center font-medium">{quizQuestion.question}</p>
-      <div className="grid grid-cols-1 gap-2">
-        {quizQuestion.options.map((option) => (
-          <button
-            key={option}
-            onClick={() => setSelectedAnswer(option)}
-            className={`w-full p-3 rounded-lg border ${
-              selectedAnswer === option
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border hover:bg-muted"
-            }`}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-    </div>
-    <DialogFooter className="flex justify-center">
-      <Button
-        disabled={!selectedAnswer}
-        onClick={handleSubmitAnswer}
-        className="mt-4"
-      >
-        Submit
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+      <Dialog open={showQuiz} onOpenChange={setShowQuiz}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">
+              Answer to Proceed
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-center font-medium">{quizQuestion.question}</p>
+            <div className="grid grid-cols-1 gap-2">
+              {quizQuestion.options.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setSelectedAnswer(option)}
+                  className={`w-full p-3 rounded-lg border ${
+                    selectedAnswer === option
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:bg-muted"
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="flex justify-center">
+            <Button
+              disabled={!selectedAnswer}
+              onClick={handleSubmitAnswer}
+              className="mt-4"
+            >
+              Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+              {/* 🔸 Modal */}
+      <Dialog open={isPostalModalOpen} onOpenChange={setIsPostalModalOpen}>
+        <DialogContent className="max-w-lg text-left">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">
+              Postal Entry Route
+            </DialogTitle>
+          </DialogHeader>
+          <DialogDescription asChild>
+            <div className="space-y-4 text-sm leading-relaxed text-foreground">
+              <p>
+                Send an unclosed postcard (standard postcard size is approx 148mm x 105mm)
+                first or second class to:
+              </p>
+              <p className="font-semibold">
+                5 Sinclair Meadows, South Shields, Tyne & Wear, NE33 5AB
+              </p>
+              <p>Include the following information:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>The competition you wish to enter</li>
+                <li>Your full name and postal address</li>
+                <li>Your phone number and email address on your Wolf Competition Ltd account</li>
+                <li>Your date of birth</li>
+                <li>Your answer to the competition question</li>
+                <li>Incomplete or illegible entries will be disqualified</li>
+                <li>Maximum one entry per household</li>
+              </ul>
 
+              <p>
+                Your entry will be subject to our{" "}
+                <span className="text-primary underline cursor-pointer">terms and conditions</span>.
+              </p>
+
+              <p className="mt-4 font-semibold">
+                My Train Journey Takes Me 55 Minutes, I Catch My Train At 6am, What Time Do I Arrive?
+              </p>
+              <p>
+                A: 6:30am , B: 6:45am , C: 6:55am , D: 7:00am
+              </p>
+            </div>
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
       <Testimonials />
       <Footer />
     </div>

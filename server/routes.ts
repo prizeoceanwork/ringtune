@@ -483,6 +483,365 @@ app.post("/api/purchase-ticket", isAuthenticated, async (req: any, res) => {
 });
 
 
+// NEW: Create spin wheel order (shows billing page)
+app.post("/api/create-spin-order", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { competitionId, quantity = 1 } = req.body; // Now we need competitionId
+
+    // Get the competition to get the actual ticket price
+    const competition = await storage.getCompetition(competitionId);
+    if (!competition) {
+      return res.status(404).json({ message: "Competition not found" });
+    }
+
+    const spinCostPerTicket = parseFloat(competition.ticketPrice);
+    const totalAmount = spinCostPerTicket * quantity;
+
+    // Get user's current balances
+    const user = await storage.getUser(userId);
+    const userBalance = parseFloat(user?.balance || "0");
+    const userPoints = user?.ringtonePoints || 0;
+    const pointsValue = userPoints * 0.01; // 1 point = £0.01
+
+    // Create pending order for spins
+    const order = await storage.createOrder({
+      userId,
+      competitionId: competitionId, // Use actual competition ID
+      quantity,
+      totalAmount: totalAmount.toString(),
+      paymentMethod: "pending",
+      status: "pending",
+    });
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      totalAmount,
+      quantity,
+      userBalance: {
+        wallet: userBalance,
+        ringtonePoints: userPoints,
+        pointsValue: pointsValue
+      },
+      spinCost: spinCostPerTicket,
+      competition: {
+        title: competition.title,
+        type: competition.type
+      }
+    });
+  } catch (error) {
+    console.error("Error creating spin order:", error);
+    res.status(500).json({ message: "Failed to create spin order" });
+  }
+});
+
+// NEW: Process spin wheel payment with multiple options
+app.post("/api/process-spin-payment", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { 
+      orderId, 
+      useWalletBalance = false, 
+      useRingtonePoints = false 
+    } = req.body;
+
+    const order = await storage.getOrder(orderId);
+    if (!order || order.userId !== userId) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.status !== "pending") {
+      return res.status(400).json({ message: "Order already processed" });
+    }
+
+    // Get competition to verify it's a spin type
+    const competition = await storage.getCompetition(order.competitionId);
+    if (!competition || competition.type !== "spin") {
+      return res.status(400).json({ message: "Invalid competition type" });
+    }
+
+    const user = await storage.getUser(userId);
+    const totalAmount = parseFloat(order.totalAmount);
+    let remainingAmount = totalAmount;
+    let walletUsed = 0;
+    let pointsUsed = 0;
+    let cashflowsUsed = 0;
+
+    const paymentBreakdown = [];
+
+    // Process wallet balance if selected
+    if (useWalletBalance) {
+      const walletBalance = parseFloat(user?.balance || "0");
+      const walletAmount = Math.min(walletBalance, remainingAmount);
+      
+      if (walletAmount > 0) {
+        const newBalance = walletBalance - walletAmount;
+        await storage.updateUserBalance(userId, newBalance.toString());
+        
+        await storage.createTransaction({
+          userId,
+          type: "purchase",
+          amount: `-${walletAmount}`,
+          description: `Wallet payment for ${order.quantity} spin(s) - ${competition.title}`,
+          orderId,
+        });
+
+        walletUsed = walletAmount;
+        remainingAmount -= walletAmount;
+        paymentBreakdown.push({
+          method: "wallet",
+          amount: walletAmount,
+          description: `Site Credit: £${walletAmount.toFixed(2)}`
+        });
+      }
+    }
+
+    // Process ringtone points if selected
+    if (useRingtonePoints && remainingAmount > 0) {
+      const availablePoints = user?.ringtonePoints || 0;
+      // Convert points to currency (1 point = £0.01)
+      const pointsValue = availablePoints * 0.01;
+      const pointsAmount = Math.min(pointsValue, remainingAmount);
+      
+      if (pointsAmount > 0) {
+        const pointsToUse = Math.floor(pointsAmount * 100); // Multiply by 100 (1/0.01)
+        const newPoints = availablePoints - pointsToUse;
+        await storage.updateUserRingtonePoints(userId, newPoints);
+        
+        await storage.createTransaction({
+          userId,
+          type: "purchase",
+          amount: `-${pointsToUse}`,
+          description: `Ringtone points payment for ${order.quantity} spin(s) - ${competition.title}`,
+          orderId,
+        });
+
+        pointsUsed = pointsToUse;
+        remainingAmount -= pointsAmount;
+        paymentBreakdown.push({
+          method: "ringtone_points",
+          amount: pointsAmount,
+          pointsUsed: pointsToUse,
+          description: `Wolf Points: £${pointsAmount.toFixed(2)} (${pointsToUse} points)`
+        });
+      }
+    }
+
+    // Process remaining amount through Cashflows
+    if (remainingAmount > 0) {
+      cashflowsUsed = remainingAmount;
+      
+      const session = await cashflows.createCompetitionPaymentSession(remainingAmount, {
+        orderId,
+        competitionId: order.competitionId,
+        userId,
+        quantity: order.quantity.toString(),
+        paymentBreakdown: JSON.stringify(paymentBreakdown)
+      });
+
+      if (!session.hostedPageUrl) {
+        // Refund wallet and points if Cashflows fails
+        if (walletUsed > 0) {
+          const currentBalance = parseFloat(user?.balance || "0");
+          await storage.updateUserBalance(userId, (currentBalance + walletUsed).toString());
+        }
+        if (pointsUsed > 0) {
+          const currentPoints = user?.ringtonePoints || 0;
+          await storage.updateUserRingtonePoints(userId, currentPoints + pointsUsed);
+        }
+        
+        return res.status(500).json({ message: "Failed to create Cashflows session" });
+      }
+
+      // Update order with partial payment info
+      await storage.updateOrderPaymentInfo(orderId, {
+        paymentMethod: "mixed",
+        walletAmount: walletUsed.toString(),
+        pointsAmount: pointsUsed.toString(),
+        cashflowsAmount: cashflowsUsed.toString(),
+        paymentBreakdown: JSON.stringify(paymentBreakdown)
+      });
+
+      return res.json({
+        success: true,
+        redirectUrl: session.hostedPageUrl,
+        sessionId: session.paymentJobReference,
+        paymentBreakdown: {
+          walletUsed,
+          pointsUsed,
+          cashflowsUsed,
+          remainingAmount
+        }
+      });
+    } else {
+      // Full payment completed with wallet/points only
+      await storage.updateOrderStatus(orderId, "completed");
+      
+      // Create spin tickets (not competition tickets)
+      const spins = [];
+      for (let i = 0; i < order.quantity; i++) {
+        const spinId = nanoid(8).toUpperCase();
+        spins.push({
+          id: spinId,
+          spinNumber: i + 1
+        });
+      }
+
+      await storage.updateOrderPaymentInfo(orderId, {
+        paymentMethod: "wallet_points_only",
+        walletAmount: walletUsed.toString(),
+        pointsAmount: pointsUsed.toString(),
+        cashflowsAmount: "0",
+        paymentBreakdown: JSON.stringify(paymentBreakdown)
+      });
+
+      return res.json({
+        success: true,
+        message: "Payment completed successfully",
+        orderId: order.id,
+        spins: spins,
+        spinsPurchased: order.quantity,
+        paymentMethod: "wallet_points_only",
+        paymentBreakdown
+      });
+    }
+  } catch (error) {
+    console.error("Error processing spin payment:", error);
+    res.status(500).json({ message: "Failed to process payment" });
+  }
+});
+
+// UPDATED: Spin wheel play route (now uses pre-paid spins)
+app.post("/api/play-spin-wheelll", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { orderId } = req.body;
+
+    // Verify the user has a completed order for spins
+    const order = await storage.getOrder(orderId);
+    if (!order || order.userId !== userId || order.status !== "completed") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "No valid spin purchase found" 
+      });
+    }
+
+    // Check if user has spins remaining from this order
+    const spinsUsed = await storage.getSpinsUsed(orderId);
+    const spinsRemaining = order.quantity - spinsUsed;
+
+    if (spinsRemaining <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No spins remaining in this purchase"
+      });
+    }
+
+    // Mark one spin as used
+    await storage.recordSpinUsage(orderId, userId);
+
+    // Your existing prize logic here
+    const winnerPrize = req.body.winnerPrize; // From your existing code
+
+    // ---- Handle prize logic ----
+    if (typeof winnerPrize.amount === "number" && winnerPrize.amount > 0) {
+      // 💰 Cash prize
+      const prizeAmount = winnerPrize.amount;
+      const user = await storage.getUser(userId);
+      const currentBalance = parseFloat(user?.balance || "0");
+      const finalBalance = currentBalance + prizeAmount;
+
+      await storage.updateUserBalance(userId, finalBalance.toFixed(2));
+
+      await storage.createTransaction({
+        userId,
+        type: "prize",
+        amount: prizeAmount.toFixed(2),
+        description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - €${prizeAmount}`,
+      });
+
+      await storage.createWinner({
+        userId,
+        competitionId: null,
+        prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
+        prizeValue: `€${prizeAmount}`,
+        imageUrl: winnerPrize.image || null,
+      });
+    } else if (
+      typeof winnerPrize.amount === "string" &&
+      winnerPrize.amount.includes("Ringtones")
+    ) {
+      // 🎵 Ringtone points prize
+      const user = await storage.getUser(userId);
+      const match = winnerPrize.amount.match(/(\d+)\s*Ringtones/);
+      if (match) {
+        const points = parseInt(match[1]);
+        const newPoints = (user?.ringtonePoints || 0) + points;
+
+        await storage.updateUserRingtonePoints(userId, newPoints);
+
+        await storage.createTransaction({
+          userId,
+          type: "prize",
+          amount: points.toString(),
+          description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - ${points} Ringtones`,
+        });
+
+        await storage.createWinner({
+          userId,
+          competitionId: null,
+          prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
+          prizeValue: `${points} Ringtones`,
+          imageUrl: winnerPrize.image || null,
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      prize: winnerPrize,
+      spinsRemaining: spinsRemaining - 1,
+      orderId: order.id
+    });
+  } catch (error) {
+    console.error("Error playing spin wheel:", error);
+    res.status(500).json({ message: "Failed to play spin wheel" });
+  }
+});
+
+// Get spin order details for billing page
+app.get("/api/spin-order/:orderId", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { orderId } = req.params;
+
+    const order = await storage.getOrder(orderId);
+    if (!order || order.userId !== userId) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const user = await storage.getUser(userId);
+
+    res.json({
+      order: {
+        id: order.id,
+        quantity: order.quantity,
+        totalAmount: order.totalAmount,
+        status: order.status
+      },
+      user: {
+        balance: user?.balance || "0",
+        ringtonePoints: user?.ringtonePoints || 0
+      },
+      spinCost: 2 // £2 per spin
+    });
+  } catch (error) {
+    console.error("Error fetching spin order:", error);
+    res.status(500).json({ message: "Failed to fetch spin order" });
+  }
+});
+
 
   // Payment confirmation webhook
 app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
@@ -721,12 +1080,12 @@ app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) 
       return res.status(400).json({ message: "Not enough ringtone points" });
     }
 
-    if (points < 1000) {
-      return res.status(400).json({ message: "Minimum conversion is 1000 points" });
+    if (points < 100) {
+      return res.status(400).json({ message: "Minimum conversion is 100 points" });
     }
 
-    // Calculate euro amount (1000 points = 1 euro)
-    const euroAmount = points / 1000;
+    // ✅ Correct conversion
+    const euroAmount = points * 0.01;
 
     // Update ringtone points
     const newPoints = currentPoints - points;
@@ -749,15 +1108,15 @@ app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) 
       userId,
       type: "prize",
       amount: euroAmount.toString(),
-      description: `Received €${euroAmount} from ringtone points conversion`,
+      description: `Received €${euroAmount.toFixed(2)} from ringtone points conversion`,
     });
 
     res.json({
       success: true,
       convertedPoints: points,
-      euroAmount: euroAmount,
+      euroAmount,
       newRingtonePoints: newPoints,
-      newBalance: newBalance
+      newBalance,
     });
 
   } catch (error) {
@@ -765,6 +1124,7 @@ app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) 
     res.status(500).json({ message: "Failed to convert ringtone points" });
   }
 });
+
 
   // User account routes
 app.get("/api/user/orders", isAuthenticated, async (req: any, res) => {

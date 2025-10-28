@@ -13,7 +13,7 @@ const Instant = () => {
   });
 
   const [filteredCompetitions, setFilteredCompetitions] = useState<Competition[]>([]);
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("instant");
   const [, setLocation] = useLocation();
 
   useEffect(() => {
