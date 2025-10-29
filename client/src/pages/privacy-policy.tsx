@@ -14,8 +14,7 @@ export default function PrivacyPolicy() {
         <div className="space-y-6 leading-relaxed text-muted-foreground">
           <p>
             We protect your data. This Privacy Policy sets out how Ringtone
-            Riches (“we”, “us”, or “our”), registered at Unit 13, Pennywell
-            Business Centre, Portsmouth Rd, Sunderland SR4 9AR, collects,
+            Riches (“we”, “us”, or “our”), registered at 1 West Havelock Street, South Shields, Tyne and Wear, NE33 5AF, collects,
             processes, stores, and discloses your personal information.
           </p>
 

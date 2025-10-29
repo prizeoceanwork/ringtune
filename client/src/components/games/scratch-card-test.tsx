@@ -167,9 +167,9 @@ const hasCompletedRef = useRef(false);
     ctx.globalCompositeOperation = "source-over";
     const gradient = ctx.createLinearGradient(0, 0, containerWidth, containerHeight);
 
-// Add color stops (start and end colors)
-gradient.addColorStop(0, "#cca60eff"); // coral
-gradient.addColorStop(1, "#e67e22"); // dodger blue
+    // Add color stops (start and end colors)
+    gradient.addColorStop(0, "#cca60eff"); // coral
+    gradient.addColorStop(1, "#e67e22"); // dodger blue
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, containerWidth, containerHeight);
     ctx.fillStyle = "#fff";

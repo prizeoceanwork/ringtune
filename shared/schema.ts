@@ -120,6 +120,13 @@ export const spinUsage = pgTable("spin_usage", {
   usedAt: timestamp("used_at").defaultNow(),
 });
 
+export const scratchCardUsage = pgTable("scratch_card_usage", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: uuid("order_id").notNull().references(() => orders.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  usedAt: timestamp("used_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertCompetitionSchema = createInsertSchema(competitions);
 export const insertTicketSchema = createInsertSchema(tickets);
@@ -140,6 +147,7 @@ export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Winner = typeof winners.$inferSelect;
 export type SpinUsage = typeof spinUsage.$inferInsert;
+export type ScratchCardUsage = typeof scratchCardUsage.$inferInsert;
 
 // Registration and login schemas
 export const registerUserSchema = createInsertSchema(users).pick({

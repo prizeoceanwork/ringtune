@@ -842,6 +842,317 @@ app.get("/api/spin-order/:orderId", isAuthenticated, async (req: any, res) => {
   }
 });
 
+app.post("/api/create-scratch-order", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { competitionId, quantity = 1 } = req.body;
+
+    const competition = await storage.getCompetition(competitionId);
+    if (!competition) {
+      return res.status(404).json({ message: "Competition not found" });
+    }
+
+    const scratchCostPerCard = parseFloat(competition.ticketPrice);
+    const totalAmount = scratchCostPerCard * quantity;
+
+    const user = await storage.getUser(userId);
+    const userBalance = parseFloat(user?.balance || "0");
+    const userPoints = user?.ringtonePoints || 0;
+    const pointsValue = userPoints * 0.01;
+
+    const order = await storage.createOrder({
+      userId,
+      competitionId,
+      quantity,
+      totalAmount: totalAmount.toString(),
+      paymentMethod: "pending",
+      status: "pending",
+    });
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      totalAmount,
+      quantity,
+      userBalance: {
+        wallet: userBalance,
+        ringtonePoints: userPoints,
+        pointsValue,
+      },
+      scratchCost: scratchCostPerCard,
+      competition: {
+        title: competition.title,
+        type: competition.type,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating scratch order:", error);
+    res.status(500).json({ message: "Failed to create scratch order" });
+  }
+});
+
+app.post("/api/process-scratch-payment", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { orderId, useWalletBalance = false, useRingtonePoints = false } = req.body;
+
+    const order = await storage.getOrder(orderId);
+    if (!order || order.userId !== userId) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.status !== "pending") {
+      return res.status(400).json({ message: "Order already processed" });
+    }
+
+    const competition = await storage.getCompetition(order.competitionId);
+    if (!competition || competition.type !== "scratch") {
+      return res.status(400).json({ message: "Invalid competition type" });
+    }
+
+    const user = await storage.getUser(userId);
+    const totalAmount = parseFloat(order.totalAmount);
+    let remainingAmount = totalAmount;
+    let walletUsed = 0;
+    let pointsUsed = 0;
+    let cashflowsUsed = 0;
+
+    const paymentBreakdown = [];
+
+    // Wallet
+    if (useWalletBalance) {
+      const walletBalance = parseFloat(user?.balance || "0");
+      const walletAmount = Math.min(walletBalance, remainingAmount);
+
+      if (walletAmount > 0) {
+        const newBalance = walletBalance - walletAmount;
+        await storage.updateUserBalance(userId, newBalance.toString());
+        await storage.createTransaction({
+          userId,
+          type: "purchase",
+          amount: `-${walletAmount}`,
+          description: `Wallet payment for ${order.quantity} scratch card(s) - ${competition.title}`,
+          orderId,
+        });
+
+        walletUsed = walletAmount;
+        remainingAmount -= walletAmount;
+        paymentBreakdown.push({
+          method: "wallet",
+          amount: walletAmount,
+          description: `Wallet: £${walletAmount.toFixed(2)}`,
+        });
+      }
+    }
+
+    // Ringtone Points
+    if (useRingtonePoints && remainingAmount > 0) {
+      const availablePoints = user?.ringtonePoints || 0;
+      const pointsValue = availablePoints * 0.01;
+      const pointsAmount = Math.min(pointsValue, remainingAmount);
+
+      if (pointsAmount > 0) {
+        const pointsToUse = Math.floor(pointsAmount * 100);
+        const newPoints = availablePoints - pointsToUse;
+        await storage.updateUserRingtonePoints(userId, newPoints);
+        await storage.createTransaction({
+          userId,
+          type: "purchase",
+          amount: `-${pointsToUse}`,
+          description: `Ringtone points payment for ${order.quantity} scratch card(s) - ${competition.title}`,
+          orderId,
+        });
+
+        pointsUsed = pointsToUse;
+        remainingAmount -= pointsAmount;
+        paymentBreakdown.push({
+          method: "ringtone_points",
+          amount: pointsAmount,
+          pointsUsed: pointsToUse,
+          description: `Wolf Points: £${pointsAmount.toFixed(2)} (${pointsToUse} points)`,
+        });
+      }
+    }
+
+    // Cashflows (for remaining)
+    if (remainingAmount > 0) {
+      cashflowsUsed = remainingAmount;
+
+      const session = await cashflows.createCompetitionPaymentSession(remainingAmount, {
+        orderId,
+        competitionId: order.competitionId,
+        userId,
+        quantity: order.quantity.toString(),
+        paymentBreakdown: JSON.stringify(paymentBreakdown),
+      });
+
+      if (!session.hostedPageUrl) {
+        // Refund wallet + points if Cashflows fails
+        if (walletUsed > 0) {
+          const currentBalance = parseFloat(user?.balance || "0");
+          await storage.updateUserBalance(userId, (currentBalance + walletUsed).toString());
+        }
+        if (pointsUsed > 0) {
+          const currentPoints = user?.ringtonePoints || 0;
+          await storage.updateUserRingtonePoints(userId, currentPoints + pointsUsed);
+        }
+
+        return res.status(500).json({ message: "Failed to create Cashflows session" });
+      }
+
+      await storage.updateOrderPaymentInfo(orderId, {
+        paymentMethod: "mixed",
+        walletAmount: walletUsed.toString(),
+        pointsAmount: pointsUsed.toString(),
+        cashflowsAmount: cashflowsUsed.toString(),
+        paymentBreakdown: JSON.stringify(paymentBreakdown),
+      });
+
+      return res.json({
+        success: true,
+        redirectUrl: session.hostedPageUrl,
+        sessionId: session.paymentJobReference,
+        paymentBreakdown,
+      });
+    } else {
+      // Fully covered by wallet/points
+      await storage.updateOrderStatus(orderId, "completed");
+      await storage.updateOrderPaymentInfo(orderId, {
+        paymentMethod: "wallet_points_only",
+        walletAmount: walletUsed.toString(),
+        pointsAmount: pointsUsed.toString(),
+        cashflowsAmount: "0",
+        paymentBreakdown: JSON.stringify(paymentBreakdown),
+      });
+
+      return res.json({
+        success: true,
+        message: "Scratch card purchase completed",
+        orderId: order.id,
+        cardsPurchased: order.quantity,
+        paymentMethod: "wallet_points_only",
+        paymentBreakdown,
+      });
+    }
+  } catch (error) {
+    console.error("Error processing scratch payment:", error);
+    res.status(500).json({ message: "Failed to process scratch payment" });
+  }
+});
+
+app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { orderId, winnerPrize } = req.body;
+
+    const order = await storage.getOrder(orderId);
+    if (!order || order.userId !== userId || order.status !== "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "No valid scratch card purchase found",
+      });
+    }
+
+    // Check if scratch card remaining
+    const used = await storage.getScratchCardsUsed(orderId);
+    const remaining = order.quantity - used;
+
+    if (remaining <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No scratch cards remaining in this purchase",
+      });
+    }
+
+    await storage.recordScratchCardUsage(orderId, userId);
+
+    // ----- Prize handling -----
+    const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+    if (winnerPrize.type === "cash" && winnerPrize.value) {
+      const amount = parseFloat(winnerPrize.value);
+      const finalBalance = parseFloat(user.balance || "0") + amount;
+      await storage.updateUserBalance(userId, finalBalance.toFixed(2));
+
+      await storage.createTransaction({
+        userId,
+        type: "prize",
+        amount: amount.toFixed(2),
+        description: `Scratch Card Prize - €${amount}`,
+      });
+
+      await storage.createWinner({
+        userId,
+        competitionId: null,
+        prizeDescription: "Scratch Card Prize",
+        prizeValue: `€${amount}`,
+        imageUrl: winnerPrize.image || null,
+      });
+    } else if (winnerPrize.type === "points" && winnerPrize.value) {
+      const points = parseInt(winnerPrize.value);
+      const newPoints = (user?.ringtonePoints || 0) + points;
+      await storage.updateUserRingtonePoints(userId, newPoints);
+
+      await storage.createTransaction({
+        userId,
+        type: "prize",
+        amount: points.toString(),
+        description: `Scratch Card Prize - ${points} Ringtones`,
+      });
+
+      await storage.createWinner({
+        userId,
+        competitionId: null,
+        prizeDescription: "Scratch Card Prize",
+        prizeValue: `${points} Ringtones`,
+        imageUrl: winnerPrize.image || null,
+      });
+    }
+
+    res.json({
+      success: true,
+      prize: winnerPrize,
+      remainingCards: remaining - 1,
+      orderId: order.id,
+    });
+  } catch (error) {
+    console.error("Error playing scratch card:", error);
+    res.status(500).json({ message: "Failed to play scratch card" });
+  }
+});
+
+app.get("/api/scratch-order/:orderId", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { orderId } = req.params;
+
+    const order = await storage.getOrder(orderId);
+    if (!order || order.userId !== userId) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const user = await storage.getUser(userId);
+
+    res.json({
+      order: {
+        id: order.id,
+        quantity: order.quantity,
+        totalAmount: order.totalAmount,
+        status: order.status,
+      },
+      user: {
+        balance: user?.balance || "0",
+        ringtonePoints: user?.ringtonePoints || 0,
+      },
+      scratchCost: 2, // €2 per scratch
+    });
+  } catch (error) {
+    console.error("Error fetching scratch order:", error);
+    res.status(500).json({ message: "Failed to fetch scratch order" });
+  }
+});
 
   // Payment confirmation webhook
 app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {

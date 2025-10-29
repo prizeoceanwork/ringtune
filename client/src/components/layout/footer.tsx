@@ -46,7 +46,7 @@ export default function Footer() {
             <h4 className="text-primary font-bold">USEFUL INFORMATION</h4>
             <div className="space-y-2">
               <a
-                href="#"
+                href="/"
                 className="block text-muted-foreground hover:text-primary transition-colors"
                 data-testid="link-competitions"
               >
@@ -110,7 +110,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-          <p>&copy; 2024 RingToneRiches. All rights reserved.</p>
+          <p>&copy; 2025 RingToneRiches. All rights reserved.</p>
         </div>
       </div>
     </footer>

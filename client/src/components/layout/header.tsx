@@ -91,15 +91,15 @@ export default function Header() {
               <>
                 {/* ADD RINGTONE POINTS BUTTON HERE */}
                 <Link href="/ringtune-points">
-                  <button className="bg-muted text-muted-foreground px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors">
-                    <i className="fas fa-music"></i>
+                  <button className="bg-muted text-yellow-300 px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors">
+                    <i className="fas fa-music "></i>
                     <span>{ringtonePoints.toLocaleString()}</span>
                   </button>
                 </Link>
                 
                 <Link href="/wallet">
                   <button className="bg-muted text-muted-foreground px-3 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground transition-colors">
-                    <i className="fas fa-wallet"></i>
+                    <i className="fas fa-wallet "></i>
                     <span>£{parseFloat(user?.balance || "0").toFixed(2)}</span>
                   </button>
                 </Link>

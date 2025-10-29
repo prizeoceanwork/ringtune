@@ -5,10 +5,12 @@ import { Competition } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import FeaturedCompetitions from "./featuredCompetitions";
+import CompetitionCard from "@/components/competition-card";
 
 const Instant = () => {
   const { isAuthenticated } = useAuth();
-  const { data: competitions = [] } = useQuery({
+  const { data: competitions = [] , isLoading} = useQuery({
     queryKey: ["/api/competitions"],
   });
 
@@ -18,9 +20,13 @@ const Instant = () => {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      setFilteredCompetitions(competitions.filter((c) => c.type !== "instant"));
+      // Not logged in → hide instant competitions
+      setFilteredCompetitions([]);
     } else {
-      setFilteredCompetitions(competitions);
+      // Only show competitions where type === "instant"
+      setFilteredCompetitions(
+        competitions.filter((c) => c.type?.toLowerCase() === "instant")
+      );
     }
   }, [competitions, isAuthenticated]);
 
@@ -49,12 +55,15 @@ const Instant = () => {
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/5">
         <div className="container mx-auto px-4 py-12">
           <div className="text-center space-y-6">
-            <h1 className="text-3xl md:text-5xl font-bold">
-              <span className="gradient-text">Welcome Back!</span>
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Ready to win big? Spin the wheel and test your luck!
-            </p>
+             <div className="relative">
+                            {competitions.length > 0 ? (
+                              <FeaturedCompetitions competitions={competitions} />
+                            ) : (
+                              <div className="text-center text-muted-foreground py-12">
+                                Loading featured competitions...
+                              </div>
+                            )}
+                          </div>
           </div>
         </div>
       </section>
@@ -74,23 +83,39 @@ const Instant = () => {
                 }`}
               >
                 {type === "all"
-                  ? "ALL COMPETITIONS"
+                  ? "ALL"
                   : type === "spin"
-                  ? "SPIN WHEEL"
+                  ? "SPIN WHEELS"
                   : type === "scratch"
                   ? "SCRATCH CARDS"
-                  : "INSTANT WIN"}
+                  : "COMPETITIONS"}
               </button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Message with height */}
-      <section className="flex-grow flex items-center justify-center py-32">
-        <p className="text-center text-xl text-muted-foreground">
-          Instant Win games coming soon! Stay tuned.
-        </p>
+     {/* Competitions or Message */}
+      <section className="flex-grow container mx-auto px-4 py-16">
+        {isLoading  ? (
+          <p className="text-center text-muted-foreground">Loading competitions...</p>
+        ) : filteredCompetitions.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredCompetitions.map((competition) => (
+              <CompetitionCard
+                key={competition.id}
+                competition={competition}
+                authenticated={true}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex justify-center items-center py-32">
+            <p className="text-center text-xl text-muted-foreground">
+              Instant Win games coming soon! Stay tuned.
+            </p>
+          </div>
+        )}
       </section>
 
       <Footer />

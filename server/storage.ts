@@ -6,6 +6,7 @@ import {
   transactions,
   winners,
   spinUsage,
+  scratchCardUsage,
   type User,
   type UpsertUser,
   type Competition,
@@ -72,6 +73,9 @@ export interface IStorage {
 
    recordSpinUsage(orderId: string, userId: string): Promise<void>;
    getSpinsUsed(orderId: string): Promise<number>;
+
+    recordScratchCardUsage(orderId: string, userId: string): Promise<void>;
+  getScratchCardsUsed(orderId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -303,6 +307,24 @@ async recordSpinUsage(orderId: string, userId: string): Promise<void> {
       .select({ count: sql<number>`count(*)` })
       .from(spinUsage)
       .where(eq(spinUsage.orderId, orderId));
+    
+    return result[0]?.count || 0;
+  }
+
+
+   async recordScratchCardUsage(orderId: string, userId: string): Promise<void> {
+    await db.insert(scratchCardUsage).values({
+      orderId,
+      userId,
+      usedAt: new Date()
+    });
+  }
+
+  async getScratchCardsUsed(orderId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(scratchCardUsage)
+      .where(eq(scratchCardUsage.orderId, orderId));
     
     return result[0]?.count || 0;
   }

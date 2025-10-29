@@ -22,8 +22,7 @@ export default function TermsAndConditions() {
               <br />
               Our correspondence address is:
               <br />
-              Unit 13, Pennywell Business Centre, Portsmouth Rd, Sunderland SR4
-              9AR.
+             1 West Havelock Street, South Shields, Tyne and Wear, NE33 5AF.
             </p>
             <p>
               If you wish to contact us for any reason, please email:{" "}

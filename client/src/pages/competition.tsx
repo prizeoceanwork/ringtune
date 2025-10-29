@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
+import CountdownTimer from "./countdownTimer";
 
 export default function CompetitionPage() {
   const rangeRef = useRef<HTMLDivElement | null>(null);
@@ -252,7 +253,7 @@ export default function CompetitionPage() {
                           ? "Spin Wheel"
                           : competition.type === "scratch"
                           ? "Scratch Card"
-                          : "Instant Win"}
+                          : "Competition"}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -289,8 +290,15 @@ export default function CompetitionPage() {
               {/* Right: Purchase Form */}
               <div className="space-y-6">
                 <div className="bg-card  rounded-xl border border-border p-8">
+                 {competition.type === "instant" && (
+
+                  <CountdownTimer
+                     days={60}
+        
+                  />
+                 )}
                   <h1
-                    className="text-3xl font-bold mb-4"
+                    className="text-3xl mt-3 font-bold mb-4"
                     data-testid={`heading-${competition.id}`}
                   >
                     {competition.title}
@@ -582,7 +590,7 @@ export default function CompetitionPage() {
                 first or second class to:
               </p>
               <p className="font-semibold">
-                5 Sinclair Meadows, South Shields, Tyne & Wear, NE33 5AB
+                1 West Havelock Street, South Shields, Tyne and Wear, NE33 5AF.
               </p>
               <p>Include the following information:</p>
               <ul className="list-disc pl-6 space-y-1">
@@ -610,7 +618,7 @@ export default function CompetitionPage() {
           </DialogDescription>
         </DialogContent>
       </Dialog>
-      <Testimonials />
+      {/* <Testimonials /> */}
       <Footer />
     </div>
   );

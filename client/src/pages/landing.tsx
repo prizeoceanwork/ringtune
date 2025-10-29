@@ -6,6 +6,8 @@ import CompetitionCard from "@/components/competition-card";
 import Testimonials from "@/components/testimonials";
 import { Competition, User } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
+import FeaturedCompetitions from "./featuredCompetitions";
+
 
 export default function Landing() {
   const { data: competitions = [], isLoading } = useQuery<Competition[]>({
@@ -40,56 +42,18 @@ export default function Landing() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/5"></div>
         <div className="container mx-auto px-4 py-16 relative">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                <span className="gradient-text">WIN AMAZING PRIZES</span><br />
-                <span className="text-foreground">FOR JUST PENNIES</span>
-              </h1>
-              <p className="text-xl text-muted-foreground">
-                Take part in exciting competitions to win cash, gadgets, and more. Affordable entry tickets available now!
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button 
-                  onClick={() => window.scrollTo({ top: document.getElementById('competitions')?.offsetTop, behavior: 'smooth' })}
-                  className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity"
-                >
-                  VIEW ALL COMPETITIONS
-                </button>
-                <button 
-                  onClick={() => window.scrollTo({ top: document.getElementById('how-to-play')?.offsetTop, behavior: 'smooth' })}
-                  className="border border-border text-foreground px-8 py-4 rounded-lg font-medium hover:bg-muted transition-colors"
-                >
-                  HOW TO PLAY
-                </button>
-              </div>
-            </div>
+       <div className="gap-12 items-center">
+  <div className="relative">
+    {competitions.length > 0 ? (
+      <FeaturedCompetitions competitions={competitions} />
+    ) : (
+      <div className="text-center text-muted-foreground py-12">
+        Loading featured competitions...
+      </div>
+    )}
+  </div>
+</div>
 
-            <div className="relative">
-              {featuredCompetition && (
-                <div className="bg-card rounded-xl p-8 border border-border">
-                  <div className="text-center space-y-4">
-                    <div className="w-32 h-32 bg-primary/20 rounded-full mx-auto flex items-center justify-center">
-                      <i className="fas fa-car text-primary text-4xl"></i>
-                    </div>
-                    <h3 className="text-2xl font-bold text-primary">FEATURED: BMW M3</h3>
-                    <p className="text-muted-foreground">
-                      {featuredCompetition.soldTickets} / {featuredCompetition.maxTickets} sold
-                    </p>
-                    <div className="bg-muted h-2 rounded-full">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ width: `${(featuredCompetition.soldTickets! / featuredCompetition.maxTickets!) * 100}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-lg font-semibold">
-                      £{featuredCompetition.ticketPrice} per entry
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </section>
 

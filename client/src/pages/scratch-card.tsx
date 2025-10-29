@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import FeaturedCompetitions from "./featuredCompetitions";
 
 export default function ScratchCardPage() {
   const { toast } = useToast();
@@ -95,12 +96,15 @@ export default function ScratchCardPage() {
           <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/5">
             <div className="container mx-auto px-4 py-12">
               <div className="text-center space-y-6">
-                <h1 className="text-3xl md:text-5xl font-bold">
-                  <span className="gradient-text">Welcome Back!</span>
-                </h1>
-                <p className="text-xl text-muted-foreground">
-                  Ready to win big? Spin the wheel and test your luck!
-                </p>
+                <div className="relative">
+                               {competitions.length > 0 ? (
+                                 <FeaturedCompetitions competitions={competitions} />
+                               ) : (
+                                 <div className="text-center text-muted-foreground py-12">
+                                   Loading featured competitions...
+                                 </div>
+                               )}
+                             </div>
               </div>
             </div>
           </section>
@@ -120,12 +124,12 @@ export default function ScratchCardPage() {
                 }`}
               >
                 {type === "all"
-                  ? "ALL COMPETITIONS"
+                  ? "ALL"
                   : type === "spin"
-                  ? "SPIN WHEEL"
+                  ? "SPIN WHEELS"
                   : type === "scratch"
                   ? "SCRATCH CARDS"
-                  : "INSTANT WIN"}
+                  : "COMPETITIONS"}
               </button>
             ))}
           </div>
