@@ -56,12 +56,8 @@ const landmarkImages = [
 ];
 
 function getRandomImages(n: number) {
-  const result: typeof landmarkImages = [];
-  for (let i = 0; i < n; i++) {
-    const random = Math.floor(Math.random() * landmarkImages.length);
-    result.push(landmarkImages[random]);
-  }
-  return result;
+  const shuffled = [...landmarkImages].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, n);
 }
 
 function generateScratchGrid(mode: "tight" | "loose" = "loose") {
@@ -77,6 +73,7 @@ function generateScratchGrid(mode: "tight" | "loose" = "loose") {
 
   return { images, isWinner };
 }
+
 
 export default function ScratchCardTest({ onScratchComplete, mode = "tight", scratchTicketCount }: ScratchCardProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -265,6 +262,16 @@ const hasCompletedRef = useRef(false);
     const sound = scratchSoundRef.current;
     if (sound && !sound.paused) sound.pause();
   }
+
+//   if (isWinner) {
+//   const chosen = landmarkImages[Math.floor(Math.random() * landmarkImages.length)];
+//   const winIndices = [0, 1, 4];
+
+//   // force exactly 3 same ones
+//   images = getRandomImages(6).map((img, i) =>
+//     winIndices.includes(i) ? chosen : img.name === chosen.name ? getRandomImages(1)[0] : img
+//   );
+// }
 
   return (
   <div className="relative flex items-center justify-center p-4 min-h-screen overflow-hidden">

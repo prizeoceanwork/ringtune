@@ -44,9 +44,9 @@ export default function FeaturedCompetitions({ competitions }: FeaturedCompetiti
           {instantCompetitions.map((competition) => (
             <div
               key={competition.id}
-              className="rounded-2xl overflow-hidden shadow-2xl"
+              className="rounded-2xl pb-10 overflow-hidden shadow-2xl"
             >
-              <div className="flex flex-col md:flex-row min-h-[400px] md:min-h-[500px]">
+              <div className="flex flex-col-reverse md:flex-row min-h-[400px] md:min-h-[500px]">
                 {/* Left Section — Content */}
                 <div className="flex-1 flex flex-col justify-center p-8 md:p-12 space-y-6">
                   <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">
@@ -106,6 +106,7 @@ export default function FeaturedCompetitions({ competitions }: FeaturedCompetiti
         
         .featured-competitions-slider .slick-prev {
           left: 15px;
+          z-index: 10;
         }
         
         .featured-competitions-slider .slick-next {
@@ -142,6 +143,7 @@ export default function FeaturedCompetitions({ competitions }: FeaturedCompetiti
           .featured-competitions-slider .slick-next {
             right: 10px;
           }
+           
         }
       `}</style>
     </div>

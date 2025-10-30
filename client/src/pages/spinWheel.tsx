@@ -103,7 +103,7 @@ const handleFilterChange = (filterType: string) => {
     if (parseFloat(user.balance || "0") < 2) {
       toast({
         title: "Insufficient Balance",
-        description: "You need at least €2 in your wallet to spin.",
+        description: "You need at least £2 in your wallet to spin.",
         variant: "destructive",
       });
       return;
@@ -196,7 +196,7 @@ const handleFilterChange = (filterType: string) => {
               if (!amount || amount === 0 || amount === "0") {
                 return "No prize this time";
               }
-              return typeof amount === 'number' ? `€${amount}` : amount;
+              return typeof amount === 'number' ? `£${amount}` : amount;
             })()}
           </p>
         </div>

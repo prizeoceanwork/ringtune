@@ -36,11 +36,12 @@ export default function CompetitionPage() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [isPostalModalOpen, setIsPostalModalOpen] = useState(false);
+  
   const quizQuestion = {
     question:
-      "My Train Journey Takes Me 55 Minutes, I Catch My Train At 6am, What Time Do I Arrive?",
-    options: ["6:30am", "6:45am", "6:55am", "7:00am"],
-    correct: "6:55am",
+      "You wake up at 7:00am and take 30 minutes to get ready. What time are you ready?",
+    options: ["7:15am", "7:25am", "7:30am", "7:45am"],
+    correct: "7:30am",
   };
 
   const handleOpenQuiz = () => {
@@ -68,6 +69,13 @@ export default function CompetitionPage() {
   const availableTickets = userTickets.filter(
     (ticket: any) => ticket.competitionId === id
   );
+
+
+    const isFreeGiveaway = competition?.title === "💷 £500 FREE GIVEAWAY! 🎉";
+    const userTicketCount = availableTickets.length;
+    const maxTicketsForGiveaway = 2;
+    const canBuyMore = isFreeGiveaway ? userTicketCount < maxTicketsForGiveaway : true;
+    const remainingTickets = maxTicketsForGiveaway - userTicketCount;
 
   const purchaseTicketMutation = useMutation({
     mutationFn: async (data: { competitionId: string; quantity: number }) => {
@@ -117,49 +125,70 @@ export default function CompetitionPage() {
     },
   });
 
-  const handlePurchase = () => {
-    if (!isAuthenticated) {
-      window.location.href = "/login";
+ const handlePurchase = () => {
+  if (!isAuthenticated) {
+    window.location.href = "/login";
+    return;
+  }
+
+  if (!competition) return;
+
+  // 🎯 Special validation for £500 FREE GIVEAWAY
+  if (isFreeGiveaway) {
+    if (userTicketCount >= maxTicketsForGiveaway) {
+      toast({
+        title: "Limit Reached",
+        description: `You already have ${userTicketCount} tickets. Maximum ${maxTicketsForGiveaway} tickets allowed.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (quantity > remainingTickets) {
+      toast({
+        title: "Limit Exceeded",
+        description: `You can only buy ${remainingTickets} more ticket${remainingTickets > 1 ? 's' : ''} (maximum ${maxTicketsForGiveaway} total)`,
+        variant: "destructive",
+      });
+      return;
+    }
+  }
+
+  // 🧠 Rest of your existing validation logic...
+  const type = competition.type?.toLowerCase();
+
+  // ✅ Only check ticket limits for INSTANT competitions
+  if (type === "instant") {
+    const competitionRemainingTickets =
+      (competition.maxTickets ?? 0) - (competition.soldTickets ?? 0);
+
+    if (competitionRemainingTickets <= 0) {
+      toast({
+        title: "Sold Out",
+        description: "All tickets for this competition are sold out.",
+        variant: "destructive",
+      });
       return;
     }
 
-    if (!competition) return;
-
-    // 🧠 Normalize type
-    const type = competition.type?.toLowerCase();
-
-    // ✅ Only check ticket limits for INSTANT competitions
-    if (type === "instant") {
-      const remainingTickets =
-        (competition.maxTickets ?? 0) - (competition.soldTickets ?? 0);
-
-      if (remainingTickets <= 0) {
-        toast({
-          title: "Sold Out",
-          description: "All tickets for this competition are sold out.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (quantity > remainingTickets) {
-        toast({
-          title: "Too Many Tickets",
-          description: `Only ${remainingTickets} ticket${
-            remainingTickets > 1 ? "s" : ""
-          } remaining. Please reduce your quantity.`,
-          variant: "destructive",
-        });
-        return;
-      }
+    if (quantity > competitionRemainingTickets) {
+      toast({
+        title: "Too Many Tickets",
+        description: `Only ${competitionRemainingTickets} ticket${
+          competitionRemainingTickets > 1 ? "s" : ""
+        } remaining. Please reduce your quantity.`,
+        variant: "destructive",
+      });
+      return;
     }
+  }
 
-    // 🟢 Proceed with purchase
-    purchaseTicketMutation.mutate({
-      competitionId: competition.id,
-      quantity,
-    });
-  };
+  // 🟢 Proceed with purchase
+  purchaseTicketMutation.mutate({
+    competitionId: competition.id,
+    quantity,
+  });
+};
 
   const totalPrice = competition
     ? parseFloat(competition.ticketPrice) * quantity
@@ -448,78 +477,122 @@ export default function CompetitionPage() {
 
 
       {/* 🎯 Range & Purchase Section */}
-      <section ref={rangeRef} className="py-16 bg-muted">
-        <div className="container mx-auto px-4 text-center max-w-2xl">
-          <h2 className="text-2xl font-bold mb-6">Select Your Entries</h2>
+<section ref={rangeRef} className="py-16 bg-muted">
+  <div className="container mx-auto px-4 text-center max-w-2xl">
+    <h2 className="text-2xl font-bold mb-6">Select Your Entries</h2>
 
-          {/* Quantity Range */}
-          <div className="space-y-4 mb-8">
-           <label className="text-sm font-medium mb-2 block">
-              How many{" "}
-              {competition.type === "spin"
-                ? "Spins"
-                : competition.type === "scratch"
-                ? "Scratches"
-                : "Tickets"}{" "}
-              do you want to buy?
-            </label>
+    {/* Quantity Range */}
+    <div className="space-y-4 mb-8">
+      <label className="text-sm font-medium mb-2 block">
+        How many{" "}
+        {competition.type === "spin"
+          ? "Spins"
+          : competition.type === "scratch"
+          ? "Scratches"
+          : "Tickets"}{" "}
+        do you want to buy?
+      </label>
 
-           <input
-              type="range"
-              min="1"
-              max="1000"
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
-              className="slider-thumb w-full appearance-none cursor-pointer"
-              data-testid="slider-quantity"
-              style={{
-                height: "12px", // track thickness
-                borderRadius: "8px",
-                background: `linear-gradient(to right, #facc15 ${
-                  ((quantity - 1) * 100) / (1000 - 1)
-                }%, #e5e7eb ${((quantity - 1) * 100) / (1000 - 1)}%)`,
-              }}
-            />
-
-            {competition.type === "spin" ? (
-              <div className="text-lg font-semibold">{quantity} Spin</div>
-            ) : competition.type === "scratch" ? (
-              <div className="text-lg font-semibold">{quantity} Scratch</div>
-            ) : (
-              <div className="text-lg font-semibold">{quantity} Tickets</div>
-            )}
-            <div className="text-sm text-muted-foreground">
-              Total: £
-              {(parseFloat(competition.ticketPrice) * quantity).toFixed(2)}
+      {/* Special case for £500 FREE GIVEAWAY */}
+      {isFreeGiveaway ? (
+        <div className="space-y-4">
+          {userTicketCount >= maxTicketsForGiveaway ? (
+            <div className="bg-yellow-100 border border-yellow-400 rounded-lg p-4">
+              <p className="text-yellow-800 font-semibold">
+                ✅ You already have {userTicketCount} tickets for this competition
+              </p>
+              <p className="text-yellow-700 text-sm mt-1">
+                Maximum {maxTicketsForGiveaway} tickets per user
+              </p>
             </div>
-          </div>
-
-          {/* Dynamic Buy Button */}
-          <div className="w-full flex justify-center">
-
-          <button
-            onClick={handleOpenQuiz}
-            disabled={isSoldOut || purchaseTicketMutation.isPending}
-            className="bg-primary w-fit text-primary-foreground px-8 py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 "
-          >
-            {isSoldOut
-              ? "SOLD OUT"
-              : purchaseTicketMutation.isPending
-              ? "Processing..."
-              : competition.type === "spin"
-              ? "BUY SPIN"
-              : competition.type === "scratch"
-              ? "BUY SCRATCH"
-              : "ENTER NOW"}
-          </button>
-          
-          </div>
-          <div    className="mt-5 text-sm text-muted-foreground underline cursor-pointer hover:text-primary"
-          onClick={() => setIsPostalModalOpen(true)}>
-            Free postal entry route
-          </div>
+          ) : (
+            <>
+              <div className="flex justify-center gap-4">
+                {[1, 2].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setQuantity(Math.min(num, remainingTickets))}
+                    disabled={num > remainingTickets}
+                    className={`px-6 py-3 rounded-lg border-2 font-bold transition-all ${
+                      quantity === num
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : num > remainingTickets
+                        ? "bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed"
+                        : "bg-background border-border hover:bg-muted"
+                    }`}
+                  >
+                    {num} {competition.type === "spin" ? "Spin" : competition.type === "scratch" ? "Scratch" : "Ticket"}
+                    {num > 1 ? "s" : ""}
+                  </button>
+                ))}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {remainingTickets === 1 
+                  ? "You can buy 1 more ticket (maximum 2 total)"
+                  : `You can buy up to ${remainingTickets} tickets (maximum 2 total)`
+                }
+              </div>
+            </>
+          )}
         </div>
-      </section>
+      ) : (
+        // Original range slider for other competitions
+        <>
+          <input
+            type="range"
+            min="1"
+            max="1000"
+            value={quantity}
+            onChange={(e) => setQuantity(Number(e.target.value))}
+            className="slider-thumb w-full appearance-none cursor-pointer"
+            data-testid="slider-quantity"
+            style={{
+              height: "12px",
+              borderRadius: "8px",
+              background: `linear-gradient(to right, #facc15 ${
+                ((quantity - 1) * 100) / (1000 - 1)
+              }%, #e5e7eb ${((quantity - 1) * 100) / (1000 - 1)}%)`,
+            }}
+          />
+          <div className="text-lg font-semibold">
+            {quantity} {competition.type === "spin" ? "Spin" : competition.type === "scratch" ? "Scratch" : "Ticket"}
+            {quantity > 1 ? "s" : ""}
+          </div>
+        </>
+      )}
+      
+      <div className="text-sm text-muted-foreground">
+        Total: £{(parseFloat(competition.ticketPrice) * quantity).toFixed(2)}
+      </div>
+    </div>
+
+    {/* Dynamic Buy Button */}
+    <div className="w-full flex justify-center">
+      <button
+        onClick={handleOpenQuiz}
+        disabled={isSoldOut || purchaseTicketMutation.isPending || (isFreeGiveaway && !canBuyMore)}
+        className="bg-primary w-fit text-primary-foreground px-8 py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isSoldOut
+          ? "SOLD OUT"
+          : purchaseTicketMutation.isPending
+          ? "Processing..."
+          : isFreeGiveaway && !canBuyMore
+          ? "MAX TICKETS REACHED"
+          : competition.type === "spin"
+          ? "BUY SPIN"
+          : competition.type === "scratch"
+          ? "BUY SCRATCH"
+          : "ENTER NOW"}
+      </button>
+    </div>
+    
+    <div className="mt-5 text-sm text-muted-foreground underline cursor-pointer hover:text-primary"
+      onClick={() => setIsPostalModalOpen(true)}>
+      Free postal entry route
+    </div>
+  </div>
+</section>
 
       {/* Call to Action */}
       <section className="bg-gradient-to-r from-blue-900 via-purple-900 to-pink-900 py-16">
@@ -596,7 +669,7 @@ export default function CompetitionPage() {
               <ul className="list-disc pl-6 space-y-1">
                 <li>The competition you wish to enter</li>
                 <li>Your full name and postal address</li>
-                <li>Your phone number and email address on your Wolf Competition Ltd account</li>
+                <li>Your phone number and email address on your RingTone Riches account</li>
                 <li>Your date of birth</li>
                 <li>Your answer to the competition question</li>
                 <li>Incomplete or illegible entries will be disqualified</li>
@@ -609,10 +682,10 @@ export default function CompetitionPage() {
               </p>
 
               <p className="mt-4 font-semibold">
-                My Train Journey Takes Me 55 Minutes, I Catch My Train At 6am, What Time Do I Arrive?
+               You wake up at 7:00am and take 30 minutes to get ready. What time are you ready?
               </p>
               <p>
-                A: 6:30am , B: 6:45am , C: 6:55am , D: 7:00am
+               A: 7:15am B: 7:20am C: 7:30am D: 7:45am
               </p>
             </div>
           </DialogDescription>

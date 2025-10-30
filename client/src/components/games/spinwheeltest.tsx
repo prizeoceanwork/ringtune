@@ -21,6 +21,7 @@ import RollsRoyce from "../../../../attached_assets/spin/RollsRoyce.svg";
 import Toyota from "../../../../attached_assets/spin/Toyota.svg";
 import Volkswagen from "../../../../attached_assets/spin/Volkswagen.svg";
 
+
 interface SpinWheelProps {
   onSpinComplete: (winnerSegment: number, winnerLabel: string, winnerPrize: any) => void;
   isSpinning: boolean;
@@ -40,10 +41,11 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
   // Define prizes with amounts for each segment
   const segments = [
     { label: "Aston Martin", color: "#c3cac8ff", icon: AstonMartin, amount: 0.15 },
+    
     { label: "Audi", color: "#0CBDF8", icon: Audi, amount: "3000 Ringtones" },
     { label: "Bentley", color: "#66C72D", icon: Bentley, amount: 0.25 },
     { label: "BMW", color: "#D69E1C", icon: BMW, amount: 0.50 },
-    { label: "Nice Try", color: "#4B5563", icon: "❌", amount: 0 },
+    
     { label: "Mini Cooper", color: "#57D61C", icon: MiniCooper, amount: 0.55 },
     { label: "Ferrari", color: "#C2586D", icon: Ferrari, amount: 0.50 },
     { label: "Ford", color: "#190B89", icon: Ford, amount: "100 Ringtones" },
@@ -53,7 +55,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
     { label: "Lamborghini", color: "#F472B6", icon: Lamborghini, amount: 0.90 },
     { label: "Land Rover", color: "#9CA3AF", icon: LandRover, amount: "2000 Ringtones" },
     { label: "Lexus", color: "#D97706", icon: Lexus, amount: "850 Ringtones" },
-    { label: "Nice Try", color: "#4B5563", icon: "❌", amount: 0 },
+    
     { label: "Maserati", color: "#7C3AED", icon: Maserati, amount: 5 },
     { label: "McLaren", color: "#DB2777", icon: McLaren, amount: 0.70 },
     { label: "Mercedes Benz", color: "#16A34A", icon: MercedesBenz, amount: 0.60 },
@@ -64,35 +66,42 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
     { label: "Rolls Royce", color: "#9333EA", icon: RollsRoyce, amount: 0.10 },
     { label: "Toyota", color: "#EAB308", icon: Toyota, amount: "250 Ringtones" },
     { label: "Volkswagen", color: "#0891B2", icon: Volkswagen, amount: "450 Ringtones" },
-    { label: "Nice Try", color: "#4B5563", icon: "❌", amount: 0 },
+    
   ];
 
   const [rotation, setRotation] = useState((2 * Math.PI) / segments.length / 4.5);
 
   // Load all images
-  useEffect(() => {
-    const loadImages = async () => {
-      const images: { [key: string]: HTMLImageElement } = {};
+useEffect(() => {
+  const loadImages = async () => {
+    const images: { [key: string]: HTMLImageElement } = {};
 
-      for (const segment of segments) {
-        if (segment.icon === "❌") continue;
+    for (const segment of segments) {
+      if (segment.icon === "❌") continue;
 
-        if (typeof segment.icon === "string") {
-          const img = new Image();
-          img.src = segment.icon;
-          await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-          });
-          images[segment.label] = img;
-        }
+      if (typeof segment.icon === "string") {
+        const img = new Image();
+
+        // Important: Allow cross-origin for SVG and PNG
+        img.crossOrigin = "anonymous";
+        img.src = segment.icon;
+
+        // Wait for image load
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        images[segment.label] = img;
       }
+    }
 
-      setLoadedImages(images);
-    };
+    setLoadedImages(images);
+  };
 
-    loadImages();
-  }, []);
+  loadImages();
+}, [segments]);
+
 
   // iOS FIX: Prevent video fullscreen on click
   useEffect(() => {
@@ -137,7 +146,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
     
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
-    const radius = Math.min(cx, cy) - 20;
+    const radius = Math.min(cx, cy) * 0.9;
     const segAngle = (2 * Math.PI) / segments.length;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -154,7 +163,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
       ctx.fillStyle = s.color;
       ctx.fill();
       ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1;
       ctx.stroke();
 
       // Draw icon and text
@@ -170,7 +179,14 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
         imgSize = radius * 0.12;
         iconWidth = imgSize * 1.5;
       }
-
+      if ("Bentley".includes(s.label)) {
+        imgSize = radius * 0.10;
+        iconWidth = imgSize * 2;
+      }
+      if ("Mini Cooper".includes(s.label)) {
+        imgSize = radius * 0.10;
+        iconWidth = imgSize * 2.2;
+      }
       if (s.label === "R") {
         imgSize = radius * 0.22;
         iconWidth = imgSize * 1.1;
@@ -185,23 +201,28 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
         ctx.fillText(icon, radius * 0.85, 0);
       } 
       // Handle loaded images
-      else if (loadedImages[s.label]) {
-        const img = loadedImages[s.label];
-        
-        ctx.save();
-        ctx.translate(radius * 0.85, 0);
-        ctx.rotate(Math.PI / 2);
-        ctx.imageSmoothingEnabled = false;
-        
-        ctx.drawImage(
-          img,
-          -iconWidth / 2,
-          -imgSize / 2,
-          iconWidth,
-          imgSize
-        );
-        ctx.restore();
-      } 
+        else if (loadedImages[s.label]) {
+  const img = loadedImages[s.label];
+
+  ctx.save();
+  ctx.translate(radius * 0.85, 0);
+  ctx.rotate(Math.PI / 2);
+
+  // Detect if it's SVG or PNG
+  const isSvg = (img.src || "").toLowerCase().endsWith(".svg");
+
+  // Adjust smoothing depending on format
+  ctx.imageSmoothingEnabled = !isSvg; // turn OFF for SVG to keep it sharp
+  ctx.imageSmoothingQuality = isSvg ? "high" : "low";
+
+  const drawX = Math.round(-iconWidth / 2);
+  const drawY = Math.round(-imgSize / 2);
+  const drawWidth = Math.round(iconWidth);
+  const drawHeight = Math.round(imgSize);
+
+  ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+  ctx.restore();
+}
       // Fallback for unloaded images
       else {
         ctx.textAlign = "center";
@@ -318,15 +339,15 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
       </video>
 
       <div className="relative w-full max-w-2xl aspect-square flex items-center justify-center z-10">
-        <img
-          src="https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/wheel_basnqc.png"
-          alt="Wheel Ring"
-          className="absolute w-full h-full object-contain z-10 pointer-events-none"
-        />
+       <img
+  src="https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/wheel_basnqc.png"
+  alt="Wheel Ring"
+  className="absolute -top-5 md:-top-0 inset-0  w-[108%] h-[108%] md:w-full md:h-full object-cover z-20 pointer-events-none"
+/>
         
         <canvas
           ref={canvasRef}
-          className="w-[88%] h-[88%] rounded-full"
+          className="w-[100%] h-[100%] sm:w-[99%] sm:h-[99%] md:w-[89%] md:h-[89%] rounded-full"
         />
 
         {/* Center video - FIXED FOR iOS */}
@@ -347,7 +368,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
         {!isSpinning && (
           <button
             onClick={spinWheel}
-            className="absolute bottom-[40%] sm:bottom-[40%] 
+            className="absolute bottom-[39%] sm:bottom-[40%] 
                        px-2 py-1 
                        bg-yellow-400 rounded-[4px] 
                        hover:bg-yellow-500 text-black font-bold 
@@ -405,7 +426,16 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
           </button>
         </div>
       </div>
+      <style>{`
+  canvas {
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+`}</style>
     </div>
+    
   );
 };
 

@@ -154,7 +154,7 @@ export default function ScratchCardPage() {
             if (parseFloat(user.balance || "0") < 2) {
               toast({
                 title: "Insufficient Balance",
-                description: "You need at least €2 in your wallet to play.",
+                description: "You need at least £2 in your wallet to play.",
                 variant: "destructive",
               });
               return;

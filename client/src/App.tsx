@@ -31,6 +31,7 @@ import PlayResponsibly from "./pages/play-responsible";
 import PrivacyPolicy from "./pages/privacy-policy";
 import ScratchCardPage from "./pages/scratch-card";
 import instant from "./pages/instant";
+import BeAware from "./pages/beAware";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -43,6 +44,8 @@ function Router() {
       <Route path="/termsAndConditions" component={TermsAndConditions} />
       <Route path="/play-responsible" component={PlayResponsibly} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/be-aware" component={BeAware} />
+
       {/* Conditional routes based on auth status */}
       {isLoading || !isAuthenticated ? (
         <>

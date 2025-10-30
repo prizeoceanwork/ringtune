@@ -28,7 +28,7 @@ export default function RingtonePoints() {
     onSuccess: (data) => {
       toast({
         title: "Conversion Successful",
-        description: `Converted ${data.convertedPoints} points to €${data.euroAmount}`,
+        description: `Converted ${data.convertedPoints} points to £${data.euroAmount}`,
         variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
@@ -113,7 +113,7 @@ export default function RingtonePoints() {
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Equivalent Value:</span>
           <span className="text-lg font-semibold">
-            €{(ringtonePoints / 100).toFixed(2)}
+            £{(ringtonePoints / 100).toFixed(2)}
           </span>
         </div>
 
@@ -141,7 +141,7 @@ export default function RingtonePoints() {
             </div>
             
             <div className="text-sm text-muted-foreground">
-              {conversionAmount} points = €{(Number(conversionAmount) / 100).toFixed(2)}
+              {conversionAmount} points = £{(Number(conversionAmount) / 100).toFixed(2)}
             </div>
 
             <button

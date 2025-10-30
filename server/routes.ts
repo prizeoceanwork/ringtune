@@ -758,14 +758,14 @@ app.post("/api/play-spin-wheelll", isAuthenticated, async (req: any, res) => {
         userId,
         type: "prize",
         amount: prizeAmount.toFixed(2),
-        description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - €${prizeAmount}`,
+        description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - £${prizeAmount}`,
       });
 
       await storage.createWinner({
         userId,
         competitionId: null,
         prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
-        prizeValue: `€${prizeAmount}`,
+        prizeValue: `£${prizeAmount}`,
         imageUrl: winnerPrize.image || null,
       });
     } else if (
@@ -1040,7 +1040,7 @@ app.post("/api/process-scratch-payment", isAuthenticated, async (req: any, res) 
   }
 });
 
-app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
+app.post("/api/play-scratch-carddd", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { orderId, winnerPrize } = req.body;
@@ -1080,14 +1080,14 @@ app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
         userId,
         type: "prize",
         amount: amount.toFixed(2),
-        description: `Scratch Card Prize - €${amount}`,
+        description: `Scratch Card Prize - £${amount}`,
       });
 
       await storage.createWinner({
         userId,
         competitionId: null,
         prizeDescription: "Scratch Card Prize",
-        prizeValue: `€${amount}`,
+        prizeValue: `£${amount}`,
         imageUrl: winnerPrize.image || null,
       });
     } else if (winnerPrize.type === "points" && winnerPrize.value) {
@@ -1146,7 +1146,7 @@ app.get("/api/scratch-order/:orderId", isAuthenticated, async (req: any, res) =>
         balance: user?.balance || "0",
         ringtonePoints: user?.ringtonePoints || 0,
       },
-      scratchCost: 2, // €2 per scratch
+      scratchCost: 2, // £2 per scratch
     });
   } catch (error) {
     console.error("Error fetching scratch order:", error);
@@ -1208,7 +1208,7 @@ app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { winnerPrize } = req.body;
-    const SPIN_COST = 2; // €2 per spin
+    const SPIN_COST = 2; // £2 per spin
 
     // Fetch user and ensure balance is enough
     const user = await storage.getUser(userId);
@@ -1244,14 +1244,14 @@ app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
         userId,
         type: "prize",
         amount: prizeAmount.toFixed(2),
-        description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - €${prizeAmount}`,
+        description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - £${prizeAmount}`,
       });
 
       await storage.createWinner({
         userId,
         competitionId: null,
         prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
-        prizeValue: `€${prizeAmount}`,
+        prizeValue: `£${prizeAmount}`,
         imageUrl: winnerPrize.image || null,
       });
     } else if (
@@ -1298,7 +1298,7 @@ app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { winnerPrize } = req.body;
-    const SCRATCH_COST = 2; // €2 per scratch
+    const SCRATCH_COST = 2; // £2 per scratch
 
     const user = await storage.getUser(userId);
     const currentBalance = parseFloat(user?.balance || "0");
@@ -1331,14 +1331,14 @@ app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
           userId,
           type: "prize",
           amount: amount.toFixed(2),
-          description: `Scratch card prize: €${amount}`,
+          description: `Scratch card prize: £${amount}`,
         });
 
         await storage.createWinner({
           userId,
           competitionId : null,
           prizeDescription: "Scratch Card Prize",
-          prizeValue: `€${amount}`,
+          prizeValue: `£${amount}`,
           imageUrl: winnerPrize.image || null,
         });
       }
@@ -1419,7 +1419,7 @@ app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) 
       userId,
       type: "prize",
       amount: euroAmount.toString(),
-      description: `Received €${euroAmount.toFixed(2)} from ringtone points conversion`,
+      description: `Received £${euroAmount.toFixed(2)} from ringtone points conversion`,
     });
 
     res.json({

@@ -12,826 +12,376 @@ export default function TermsAndConditions() {
           Terms & Conditions
         </h1>
 
-        <div className="space-y-8 space-y-6 leading-relaxed text-muted-foreground  ">
+        <div className="space-y-8 space-y-6 leading-relaxed text-muted-foreground">
           <section>
-            <h2 className="text-2xl text-white font-semibold  mb-3">
-              1. The Promoter
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              Introduction
             </h2>
-            <p className="">
-              <strong>Ringtone Riches</strong>
-              <br />
-              Our correspondence address is:
-              <br />
-             1 West Havelock Street, South Shields, Tyne and Wear, NE33 5AF.
+            <p>
+              Ringtone Riches is a promoter of Free draw which results in the allocation of prizes in accordance with the terms and conditions on the website www.ringtoneriches.co.uk. Ringtone Riches, 1 West Havelock Street, South Shields, Tyne & Wear, United Kingdom, NE33 5AF, support@ringtoneriches.co.uk
             </p>
             <p>
-              If you wish to contact us for any reason, please email:{" "}
-              <a
-                href="mailto:support@ringtoneriches.co.uk"
-                className="text-yellow-400 hover:underline"
-              >
-                support@ringtoneriches.co.uk
-              </a>
+              The promoter may run multiple competitions at one time, each competition will have a predetermined prize. Question (when there are any): The question being answered proves the element of skill or knowledge required in order to be eligible for the opportunity to win the prize.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl text-white font-semibold  mb-3">
-              2. The Competitions
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              Entry Requirements
             </h2>
             <p>
-              These terms and conditions apply to all competitions listed on the
-              Promoter’s website at{" "}
-              <a
-                href="https://www.ringtoneriches.co.uk"
-                className="text-yellow-400 hover:underline"
-              >
-                www.ringtoneriches.co.uk
-              </a>{" "}
-              – The Competitions “Website”
+              Entry: The question (when there are any) related to the prize must be answered correctly, alongside the agreeance of paying the set fee to be entered into the draw in question. Payment will be made in pounds sterling (GBP) or (EURO) for Republic of Ireland, by the entrant via the payment gateway on the website. To which the terms and conditions they agree to will apply. The entrant is defined as those who enter the competitions online or via other methods the promoter uses via other platforms.
             </p>
             <p>
-              All competitions are skill-based competitions. Entry fees for
-              online entries are payable each time you enter unless the “Free
-              Entry Route” is chosen. Where the Promoter offers an easy or
-              multiple-choice question, a free entry route is available.
-            </p>
-            <p>
-              To be in with a chance of winning, every Entrant must correctly
-              answer a question or solve a problem set by the Promoter (the
-              “Competition Question”).
+              The winner will be chosen at random once the maximum number of entries has been reached, or when the set end date is reached. Proof of identity and age must be provided upon collection of the prize and match the details provided on entry of the competition. A prize cannot be collected by someone else on the winner's behalf. Subject to winners' consent there may be a photo/testimonial taken for use on the website/social media pages.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl text-white font-semibold  mb-3">
-              3. Competition Entry
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              Competition Duration
+            </h2>
+            <p>
+              Each competition will run until the maximum number of entries has been met. After which, all entrants will be notified of a draw date within 72 hours of the competition close.
+            </p>
+            <p>
+              The prize may still be awarded at the discretion of the promoter even if the maximum number of paid entries has not been met.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              1. General
             </h2>
             <div className="space-y-4">
               <p>
-                3.1. The competition will run between the opening and closing
-                dates specified on the Website. These dates shall be referred to
-                as the “Opening Date” and “Closing Date” respectively. All times
-                and dates referred to are the times and dates in the United
-                Kingdom.
+                1.1 By entering the competition, entrants are deemed to have read and agreed to these terms and conditions and are legally bound by them.
               </p>
               <p>
-                3.2 The Promoter reserves the right to change the Opening and
-                Closing Dates. If the Promoter does change the Opening Date
-                and/or the Closing Date of a competition, the new details will
-                be displayed on the Website.  We will do this a maximum of 2
-                times and only then in exceptional circumstances to make each
-                competition as fair as possible to all participants.  An
-                exceptional circumstance could be a UK wide internet outage or
-                server failure, however, we would not expect any of these things
-                to happen but rest assured should anything happen we will do our
-                very best to make sure participants are not inconvenienced.
+                1.2 All entrants must submit all the contact details requested by the promoter which includes email address, contact number and full name. to be used for the purpose of notifying the winner, to be able to post the winner's name and residence on the winner's section of the promoter's website and social media platforms and to comply with the privacy policy.
               </p>
               <p>
-                3.3 All competition entries must be received by the Promoter no
-                later than the specified time on the Closing Date. All
-                competition entries received after the specified time on the
-                Closing Date may be disqualified without a refund.
-              </p>
-              <p>
-                3.4 . The maximum number of entries to the competition will be
-                stated on the Website. The number of entries you can make may be
-                limited if the maximum number of entries is reached.
-              </p>
-
-              <p>3.5 To enter the competition:</p>
-              <ul className="list-disc ml-6 space-y-1">
-                <li>Go to the website and view the competition question.</li>
-                <li>
-                  select your answer to the competition question and the
-                  required number of entries.
-                </li>
-                <li>
-                  complete the checkout process and submit the online entry
-                  form; then
-                </li>
-                <li>
-                  complete the payment to receive your order confirmation.
-                </li>
-              </ul>
-
-              <p>
-                3.6 . All entries must be submitted in the English language.
-                Entries in languages other than English will automatically be
-                disqualified and no refund will be given.  Allowances for poor
-                spelling will of course be made, but illegible entries will be
-                excluded
-              </p>
-              <p>
-                3.7 The Promoter will send confirmation that your entry has been
-                received, and your allocated ticket number(s).
-              </p>
-              <p>
-                3.8 The Promoter will not accept responsibility for competition
-                entries that are not completed, are lost, or are delayed
-                regardless of cause, including, for example, as a result of any
-                equipment failure, technical malfunction, postal delays,
-                systems, satellite, network, server, computer hardware or
-                software failure of any kind.
-              </p>
-              <p>
-                3.9 By purchasing entries and submitting a competition entry,
-                you are entering into a contract with the Promoter and are
-                agreeing to be bound by these terms and conditions
-              </p>
-              <p>
-                3.10. Under the Gambling Act 2005, the availability of a free
-                entry deems the competition does not fall within the definition
-                of a lottery. Consequently, you may enter the competition for
-                free by complying with the following conditions:
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <ul className="list-disc ml-6 space-y-1">
-                <li>
-                  send your entry on a postcard by first or second class post to
-                  the Promoter at the competition address shown on all
-                  competitions.  We do not allow entries inside envelopes, a
-                  standard UK-sized postcard is 148mm x 105mm, any entry
-                  significantly different to these sizes will not be accepted,
-                  e.g. an entry on a significantly smaller or larger postcard
-                </li>
-                <li>include with your entry.</li>
-                <li>
-                  The competition you are entering as stated on the website.
-                </li>
-                <li>your full name and date of birth.</li>
-                <li>your address.</li>
-                <li>
-                  {" "}
-                  a contact telephone number and email address registered on
-                  your account on our website; and
-                </li>
-                <li>your answer to the Competition Question.</li>
-                <li>incomplete or illegible entries will be disqualified.</li>
-                <li>
-                  you may submit free entries for any competition however each
-                  free entry must be submitted separately. Multiple entries in
-                  one envelope or one postcard will not be accepted and will be
-                  counted as one single entry.
-                </li>
-                <li>
-                  by entering the competition, you are confirming that you meet
-                  the criteria and accept these terms and conditions.
-                </li>
-                <li>
-                  your entry must be received by the Promoter before the Closing
-                  Date. Entries received post-Closing Date will not be accepted.
-                </li>
-                <li>
-                  the Promoter will not confess receipt of your entry nor
-                  confirm if your solution to the Competition Question is
-                  correct.
-                </li>
-                <li>
-                  if the number of paid and free entries reaches the competition
-                  limit before your free entry is received, your submission will
-                  not be accepted.
-                </li>
-                <li>
-                  Entrants must have created an account on the Website for the
-                  free entry to be processed. All details on the postcard MUST
-                  resemble the details on the account and phone and email must
-                  match to receive the order confirmation and ticket number.
-                  Postal entries in violation of this term cannot be processed.
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl text-white font-semibold  mb-3">
-              4. Choosing a Winner
-            </h2>
-            <p>
-              4.1 All Entrants who answer the Competition Question correctly
-              will be placed into a draw and the winner will be chosen by Google
-              random draw generator. The random draw will take place live on a
-              social media platform as soon as reasonably possible and, in any
-              event, within 7 days of the Closing Date (“Draw Date”).
-            </p>
-            <p>
-              4.2 All Entrants will have their names and ticket numbers put into
-              a spreadsheet and/or readable page. This spreadsheet/page will be
-              visible during the live draw. If you wish to have your name
-              censored from the spreadsheet for the live draw, please contact{" "}
-              <a
-                href="mailto:support@ringtoneriches.co.uk"
-                className="text-yellow-400 hover:underline"
-              >
-                support@ringtoneriches.co.uk
-              </a>{" "}
-              with reasonable time left before the prize draw takes place. 
-              However, as part of the competition terms, all winners agree to be
-              named live and on any media relating to winners that we may
-              publish.  This does not override any data protection rights you
-              may have of course and should any winner wish to make any changes
-              or use their right to be forgotten please email{" "}
-              <a
-                href="mailto:support@ringtoneriches.co.uk"
-                className="text-yellow-400 hover:underline"
-              >
-                support@ringtoneriches.co.uk
-              </a>{" "}
-              For assistance with entries, please email us at{" "}
-              <a
-                href="mailto:support@ringtoneriches.co.uk"
-                className="text-yellow-400 hover:underline"
-              >
-                support@ringtoneriches.co.uk
-              </a>{" "}
-            </p>
-          </section>
-
-          <section className="my-12">
-            <h2 className="text-white text-2xl font-bold mb-6">
-              5. Eligibility
-            </h2>
-
-            <div className="space-y-4  leading-relaxed text-muted-foreground">
-              <p>
-                <strong>5.1.</strong> The competitions are only open to all
-                residents in the <strong>United Kingdom</strong> aged{" "}
-                <strong>18 years or over</strong>, excluding:
-              </p>
-              <ul className="list-disc list-inside ml-4">
-                <li>(a) employees of the Promoter;</li>
-                <li>
-                  (b) employees of agents or suppliers of the Promoter who are
-                  professionally connected with the competition or its
-                  administration; or
-                </li>
-                <li>
-                  (c) members of the immediate families or households of (a) and
-                  (b) above.
-                </li>
-              </ul>
-
-              <p>
-                <strong>5.2.</strong> By entering the competition, you confirm
-                that you are eligible to do so and eligible to claim any prize
-                you may win. The Promoter may require you to provide proof that
-                you are eligible to enter the competition. If you fail to
-                provide the Promoter with any such proof or other information
-                that they may require within a reasonable time, you may be
-                disqualified from the competition.
-              </p>
-
-              <p>
-                <strong>5.3.</strong> The Promoter will not accept competition
-                entries that are:
-              </p>
-              <ul className="list-disc list-inside ml-4">
-                <li>(a) automatically generated by computer; or</li>
-                <li>(b) incomplete.</li>
-              </ul>
-
-              <p>
-                <strong>5.4.</strong> The Promoter reserves all rights to
-                disqualify you if your conduct is contrary to the spirit or
-                intention of the prize competition.
-              </p>
-
-              <p>
-                <strong>5.5.</strong> No refunds of the entry fee will be given
-                in any event, including:
-              </p>
-              <ul className="list-disc list-inside ml-4">
-                <li>
-                  (a) if, following your entry into the competition, you
-                  subsequently find out that you are not eligible to enter the
-                  competition or claim the Prize;
-                </li>
-                <li>
-                  (b) if, following your entry into the competition the
-                  eligibility criteria for entering the competition or claiming
-                  the Prize changes and you are no longer eligible; or
-                </li>
-                <li>
-                  (c) if you are disqualified from the competition by the
-                  Promoter for any reason.
-                </li>
-              </ul>
-
-              <p>
-                <strong>5.6.</strong> Entrants can enter each competition as
-                many times as they wish until the maximum number of entries per
-                user has been submitted and until the maximum number of entries
-                for the competition has been received. Entrants submitting free
-                entries must submit each entry separately. Bulk entries, if
-                received, will not be accepted and will only be counted as one
-                single entry. Entries may be limited if the maximum number of
-                entries for the competition is reached.
-              </p>
-
-              <p>
-                <strong>5.7.</strong> An Entry will be declared void, or the
-                Promoter may seek recovery of the Prize (without any refund
-                provided) if the Entrant or Winner is found to have engaged in:
-              </p>
-              <ul className="list-disc list-inside ml-4">
-                <li>(a) any form of fraud (actual or apparent);</li>
-                <li>(b) fraudulent misrepresentation;</li>
-                <li>(c) fraudulent concealment;</li>
-                <li>
-                  (d) hacking or interference with the proper functioning of the
-                  website; or
-                </li>
-                <li>
-                  (e) amending, or unauthorised use of, any of the code that
-                  constitutes the website.
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          <section className="my-12">
-            <h2 className="text-white text-2xl font-bold mb-6">
-              6. The Prize
-            </h2>
-
-            <div className="space-y-4  leading-relaxed">
-              <p>
-                <strong>6.1.</strong> The prize for the competition is described
-                on the Website (the “Prize”). Details of the Prize are, to the
-                best of the Promoter’s knowledge, information, and belief,
-                correct as of the Opening Date.
-              </p>
-
-              <p>
-                <strong>6.2.</strong> Prizes will not have a cash alternative.
-              </p>
-
-              <p>
-                <strong>6.3.</strong> Prizes are always new and as described,
-                purchased from a reputable retail outlet and you will receive
-                the prize in the same condition as any new product purchased
-                from a retailer. Price advertised as value will be the retail
-                price at the time of posting the competition.
-              </p>
-
-              <p>
-                <strong>6.4.</strong> The Prize may be supplied by a third-party
-                supplier (the “Supplier”). Details of the Supplier (if any) will
-                be provided on the Website.
-              </p>
-
-              <p>
-                <strong>6.5.</strong> The Promoter reserves the right to
-                substitute the Prize for an alternative prize (“Prize”) in the
-                following circumstances, however please be aware that we will
-                pay any prize irrespective of the amount of tickets sold and the
-                full amount of any cash prize:
-              </p>
-              <ul className="list-disc list-inside ml-4">
-                <li>
-                  (a) the Prize becomes unavailable due to damage, theft, fire
-                  or any event out of our control — all of ringtoneriches.co.uk
-                  prizes are purchased prior to the prizes being offered, with
-                  receipt in hand;
-                </li>
-                <li>
-                  (b) other circumstances beyond the reasonable control of the
-                  Promoter make it necessary to do so;
-                </li>
-              </ul>
-
-              <p>
-                <strong>6.6.</strong> The Prize is not negotiable or
-                transferable.
-              </p>
-
-              <p>
-                <strong>6.7.</strong> The Sur-Ron main draw will have{" "}
-                <strong>4 × £500 winners</strong> based on ticket sales:
-              </p>
-              <ul className="list-disc list-inside ml-4">
-                <li>• 5000➕ Tickets Sold (1️⃣ × £500)</li>
-                <li>• 6000➕ Tickets Sold (2️⃣ × £500)</li>
-                <li>• 7000➕ Tickets Sold (3️⃣ × £500)</li>
-                <li>• 8000➕ Tickets Sold (4️⃣ × £500 Runner Up Winners)</li>
-              </ul>
-              <p>
-                In the event that under 5000 tickets are sold, only the main
-                prize will be won.
-              </p>
-
-              <p>
-                <strong>6.8.</strong>{" "}
-                <em>Promotion of Cash Prizes Over £1,000</em>
-              </p>
-              <p>
-                By entering our competitions, you agree that if you win a cash
-                prize exceeding £1,000, we may use your first name, surname,
-                general location (e.g., town/city), and photographs or video
-                content related to your win for promotional purposes. This
-                includes featuring your win on our website, social media
-                channels, and other marketing materials.
-              </p>
-            </div>
-          </section>
-
-          <section className="my-12">
-            <h2 className="text-white text-2xl font-bold mb-6">
-              7. Winners
-            </h2>
-
-            <div className="space-y-4  leading-relaxed">
-              <p>
-                <strong>7.1.</strong> The decision of the Promoter is final, and
-                no correspondence or discussion will be entered into.
-              </p>
-
-              <p>
-                <strong>7.2.</strong> The Winner’s full name will be announced
-                during the live draw. If you wish for your name to be censored
-                on our spreadsheet or page during the live draw, please contact{" "}
-                <a
-                  href="mailto:support@ringtoneriches.co.uk"
-                  className="text-yellow-400 hover:underline"
-                >
-                  support@ringtoneriches.co.uk
-                </a>{" "}
-                with reasonable time left before the prize draw takes place.
-              </p>
-
-              <p>
-                <strong>7.3.</strong> The Promoter will contact the winner
-                personally as soon as practicable after the Draw Date using the
-                telephone number or email address provided with the competition
-                entry. If the winner cannot be contacted, is not available, or
-                has not claimed the Prize within 14 days of the Draw Date, the
-                Promoter reserves the right to offer the Prize to another
-                Entrant (“The Alternate Winner“) selected at random in the same
-                method as before from the remaining correct entries received
-                before the Closing Date. The Alternate Winner shall have 14 days
-                from notification of their status by the Promoters to
-                communicate their acceptance of the Prize. This process shall
-                continue until a winner accepts the Prize.
-              </p>
-
-              <p>
-                <strong>7.4.</strong> The Promoter must either publish or make
-                available information that indicates that a valid award took
-                place. To comply with this obligation, the Promoter will publish
-                the full name and county/town of residence of major prize
-                winners on the Website.
-              </p>
-
-              <p>
-                <strong>7.5.</strong> If you object to any or all of your full
-                name, county/town of residence, and winning entry being
-                published or made available, please contact the Promoter at{" "}
-                <a
-                  href="mailto:support@ringtoneriches.co.uk"
-                  className="text-yellow-400 hover:underline"
-                >
-                  support@ringtoneriches.co.uk
-                </a>{" "}
-                before the Closing Date. In such circumstances, the Promoter
-                must still provide the information to the Advertising Standards
-                Authority on request.
-              </p>
-            </div>
-          </section>
-
-          <section className="my-12">
-            <h2 className="text-white text-2xl font-bold mb-6">
-              8. Claiming the Prize
-            </h2>
-
-            <div className="space-y-4  leading-relaxed">
-              <p>
-                <strong>8.1.</strong> You must claim the Prize personally. The
-                Prize may not be claimed by a third party on your behalf.
-                Details of how the Prize will be delivered to you (or made
-                available for collection) are published on the Website or
-                available on request.
-              </p>
-
-              <p>
-                <strong>8.2.</strong> If your details, including contact
-                information, change at any time you should notify the Promoter
-                as soon as reasonably possible. Notifications should be sent to
-                the Promoter via email to{" "}
-                <a
-                  href="mailto:support@ringtoneriches.co.uk"
-                  className="text-yellow-400 hover:underline"
-                >
-                  support@ringtoneriches.co.uk
-                </a>
-                . Notifications must include details of the competition you have
-                entered, your old details, and your new details. If your details
-                change within 7 days of the Closing Date, the Promoter will use
-                your old details if it needs to try to contact you.
-              </p>
-
-              <p>
-                <strong>8.3.</strong> Any Cash Prize will be transferred
-                directly to the winner’s nominated bank account. The winner must
-                provide evidence that they are the sole or joint beneficiary of
-                the bank account. Failure to do so within 14 days will result in
-                disqualification from the competition and the winner forfeiting
-                the prize. In such circumstances, the Promoter reserves the
-                right to offer the Prize to the next eligible Entrant selected
-                from the correct entries that were received before the Closing
-                Date.
-              </p>
-
-              <p>
-                <strong>8.4.</strong> The Promoter does not accept any
-                responsibility and is not liable to pay any compensation if you
-                are unable to or do not take up the Prize.
+                1.3 It is the entrant's responsibility to provide the promoter with correct and up to date contact information. The promoter accepts no responsibility for failure or inability to make contact with any entrant due to errors in the providing of inaccurate information from the entrant. By entering the competition, the entrant ('entrant', 'you', your(s)') will be deemed to have legal capacity to do so. You will have read and fully understand the terms and conditions and are bound by them and any other relevant requirements set out in any promotional material.
               </p>
             </div>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-white mb-3">
-              9. Storage
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              2. Privacy Policy
             </h2>
-            <p>
-              The Promoter can store the chosen Prize free of charge for up to
-              30 days after notifying the Winner, at the end of which the Prize
-              will be delivered to the Winner. If the Prize needs to be stored
-              by the Promoter for more than 30 days, then this shall be at the
-              entire cost of the Winner where such cost will need to be paid by
-              the Winner to the Promoter before the Winner receives the Prize.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-white mb-3">
-              10. Limitation of Liability
-            </h2>
-            <p>
-              Insofar as is permitted by law, the Promoter, its agents, or
-              distributors will not in any circumstances be responsible or
-              liable to compensate the Winner or accept any liability for any
-              loss, damage, personal injury, or death occurring as a result of
-              taking up the Prize except where it is caused by the negligence of
-              the Promoter, its agents or distributors or that of their
-              employees. Your statutory rights are not affected.
-            </p>
-          </section>
-
-          <section className="my-12">
-            <h2 className="text-white text-2xl font-bold mb-6">
-              11. Data Protection and Publicity
-            </h2>
-
-            <div className="space-y-4  leading-relaxed">
+            <div className="space-y-4">
               <p>
-                <strong>11.1.</strong> By entering the competition, you agree
-                that any personal information provided by you with the
-                competition entry may be held and used only by the Promoter or
-                its agents and suppliers to administer the competition or as
-                otherwise set out in the Promoter’s Privacy Policy, a copy of
-                which is available on the Website.
+                2.1 The Entrants and the promoter recognise that the promoter may use contact details and other data including personal data as defined by the Data Protection Act 1998 supplied by the Entrants to the Promoter to administer the Website and conduct the Competition according to these Terms and Conditions.
               </p>
-
               <p>
-                <strong>11.2.</strong> If you are the Winner of the competition,
-                you agree that the Promoter may use your name, image, and town
-                or county of residence to announce the Winner of this
-                competition. You further agree to participate in any reasonable
-                publicity required by the Promoter.
-              </p>
-
-              <p>
-                <strong>11.3.</strong> If you do not wish to participate in any
-                publicity, you must notify the Promoter before the Closing Date.
-                This will not affect your chances of winning the Prize. If you
-                do not agree to participate in any publicity about the
-                competition, we may still provide your details to the
-                Advertising Standards Authority and/or any law enforcement
-                agencies and HMRC if requested to do so about money laundering
-                or fraud. This is a legal requirement that we must comply with
-                to prove that the competition has been properly administered and
-                the Prize awarded.
-              </p>
-
-              <p>
-                <strong>11.4.</strong> If you are the Winner of the competition,
-                you may be required to provide further personal information and
-                proof of your identity to confirm your eligibility to claim the
-                Prize and transfer ownership of the Prize to you. You consent to
-                the use of your information in this way. You are entitled to
-                request further details about how your personal information is
-                being used. You may also withdraw your consent to your personal
-                information being used in such a way but by doing so you may
-                prevent the Prize being transferred to you. In such
-                circumstances, you will be deemed to have withdrawn from the
-                competition and forfeit the Prize. You will not be entitled to
-                any refund of your entry fee. The Promoter reserves the right to
-                offer the Prize to the next eligible Entrant selected from the
-                correct entries that were received before the Closing Date.
-              </p>
-
-              <p>
-                <strong>11.5.</strong> Please note that under data protection
-                laws you are entitled to request that the Promoter does not
-                contact you and removes your details from its database. If you
-                make such a request, you will be withdrawing from the
-                competition as it will not be possible to contact you if you are
-                the winner. You will not be entitled to any refund of any entry
-                fee if you withdraw from the competition. If you do not wish any
-                of your details to be used by the Promoter for promotional
-                purposes, please email the Promoter at{" "}
-                <a
-                  href="mailto:support@ringtoneriches.co.uk"
-                  className="text-yellow-400 hover:underline"
-                >
-                  support@ringtoneriches.co.uk
-                </a>{" "}
-                before the Closing Date.
-              </p>
-            </div>
-          </section>
-
-          <section className="my-12">
-            <h2 className="text-white text-2xl font-bold mb-6">
-              12. Your Account
-            </h2>
-            <div className="space-y-4  leading-relaxed">
-              <p>
-                <strong>12.1.</strong> You must keep your account password
-                secure and secret at all times and take steps to prevent it from
-                being used without your permission. You must (a) memorise your
-                password and never tell it to anyone, (b) never write your
-                password down (including on your computer or other electronic
-                devices) or record it in a way that can be understood by someone
-                else, (c) destroy any communications from the Promoter
-                concerning your password as soon as you have read them, (d)
-                avoid using a password that is easy to guess, (e) ensure that
-                no-one else (apart from you) uses your account while you and/or
-                your devices are logged on to the Website (including by logging
-                on to your devices through a mobile, Wi-Fi or shared access
-                connection they are using), (f) log off or exit from your
-                account when not using it, and (g) keep your password or other
-                access information secret.
-              </p>
-
-              <p>
-                <strong>12.2.</strong> Your password and login details are
-                personal to you and should not be given to anyone else and/or
-                used to provide shared access e.g. over a network. You must use
-                a password that is unique to your account, and maintain good
-                internet security.
-              </p>
-
-              <p>
-                <strong>12.3.</strong> You must contact the Promoter immediately
-                if you believe, suspect, or know that anyone apart from you has
-                used your account and/or given any instruction concerning it
-                without your permission, or if you believe, suspect, or know
-                someone else knows your password.
-              </p>
-
-              <p>
-                <strong>12.4.</strong> If you forget your password, you can
-                reset it by following the instructions on the Website (as long
-                as you can provide the relevant security information requested
-                or required by the Promoter).
-              </p>
-
-              <p>
-                <strong>12.5.</strong> The Promoter shall not be responsible
-                and/or liable for any and/or all consequences arising out of
-                and/or relating to any and/or all breaches of this rule 12.5. by
-                you. Furthermore, the Promoter shall not, in any event, be
-                responsible and/or liable for any actions and/or inactions that
-                you may take and/or consequences that you may suffer and/or
-                incur as a result of using and/or in connection with the
-                Website.
-              </p>
-            </div>
-          </section>
-
-          <section className="my-12">
-            <h2 className="text-white text-2xl font-bold mb-6">
-              13. Unauthorised Use and Expiry of Your Debit Card
-            </h2>
-            <div className="space-y-4  leading-relaxed">
-              <p>
-                <strong>13.1.</strong> If you notify your nominated bank (or
-                building society) that your debit card has been used without
-                your permission about a Competition and, and your nominated bank
-                (or building society) asks the Promoter to return the relevant
-                amount to your nominated bank (or building society) account, the
-                Promoter may suspend your account and ask you to contact the
-                Promoter. The Promoter accepts no responsibility and will have
-                no liability for any chargebacks.
-              </p>
-
-              <p>
-                <strong>13.2.</strong> If your debit card is due to expire, the
-                Promoter will use reasonable efforts to return the funds in your
-                account to your debit card before midnight on the day it
-                expires. If it is not able to do so, the Promoter will use
-                reasonable efforts to alert you of this and you should, in these
-                circumstances, contact the Promoter to arrange another
-                appropriate way for the Promoter to return the funds to you.
-              </p>
-            </div>
-          </section>
-
-          <section className="my-12">
-            <h2 className="text-white text-2xl font-bold mb-6">
-              14. General
-            </h2>
-            <div className="space-y-4  leading-relaxed">
-              <p>
-                <strong>14.1.</strong> The Promoter reserves the right to amend
-                these terms and conditions from time to time. The latest version
-                of these terms and conditions will be available on the Website.
-              </p>
-
-              <p>
-                <strong>14.2.</strong> If there is any reason to believe that
-                there has been a breach of these terms and conditions, the
-                Promoter may, at its sole discretion, reserve the right to
-                exclude you from participating in the competition and any future
-                competitions.
-              </p>
-
-              <p>
-                <strong>14.3.</strong> The Promoter reserves the right to hold,
-                void, suspend, cancel, or amend the Prize competition where it
-                becomes necessary to do so.
-              </p>
-
-              <p>
-                <strong>14.4.</strong> The Website may contain hyperlinks to
-                websites operated by parties other than us. Such hyperlinks are
-                provided for your reference and convenience only. We do not
-                control such websites and are not responsible for their content
-                and/or the privacy or other practices of such websites. It is up
-                to you to take precautions to ensure that whatever links they
-                select and/or software you download from such websites are free
-                of viruses. Our inclusion of hyperlinks to such websites does
-                not imply any endorsement of the material on such websites,
-                association, sponsorship, and/or partnership with their
-                operators. You must not create a text hyperlink to the Website
-                without our prior written consent.
-              </p>
-
-              <p>
-                <strong>14.5.</strong> These terms and conditions shall be
-                governed by England and Wales law, and the parties submit to the
-                exclusive jurisdiction of the courts of England and Wales.
-              </p>
-
-              <p>
-                <strong>14.6.</strong> Under the Contracts (Rights of Third
-                Parties) Act 1999 (as amended or re-enacted from time to time,
-                and any subordinate legislation made under that act) or
-                otherwise, a person who is not a party to these terms and
-                conditions has no rights to enforce any provision of these terms
-                and conditions.
-              </p>
-
-              <p>
-                <strong>14.7.</strong> If any provision (or part of a provision)
-                of these terms and conditions is decided by a court of competent
-                jurisdiction to be void and/or unenforceable, that decision will
-                only affect the particular provision (or part of the provision),
-                and will not, in itself, make the other provisions void or
-                unenforceable.
-              </p>
-
-              <p>
-                <strong>14.8.</strong> You should print a copy of these terms
-                and conditions and keep them for your records.
+                2.2 The Entrants and the promoter also recognise that the promoter may (either by choice or at the request of a third party) also disclose this information to relevant third parties for the purposes of the prevention of fraud, money laundering, legal or other financial or regulatory reasons.
               </p>
             </div>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-white mb-3">
-              Text Message Marketing
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              3. Competition
             </h2>
-            <p>
-              By checking the SMS marketing tickbox at checkout, you consent to
-              receive marketing text messages (e.g. promos, cart reminders) from
-              Ringtone Riches at the number provided, including messages sent by
-              autodialer. Consent is not a condition of any purchase. Message
-              and data rates may apply. Message frequency varies. You can
-              unsubscribe at any time by replying STOP or clicking the
-              unsubscribe link (where available). Review our Privacy Policy and
-              Terms of Service for more information.
-            </p>
+            <div className="space-y-4">
+              <p>3.1 The Competition is operated by Ringtone Riches</p>
+              <p>
+                3.2 The Competition is open for entry to all persons aged 18 or over from the UK and Ireland excluding the owners, their family, professional advisers or anyone else connected with the development or operation of the Website or conducts administration of the Competition in any way, shape or form.
+              </p>
+              <p>
+                3.3 By entering into the Competition, all Entrants acknowledge that their payment for each entry to answer the Question (when there are any) and thereby enter the Competition does not guarantee in any way that they will win the prize.
+              </p>
+              <p>
+                3.4 Only completed Entries which contain the correct answer as held by the Promoter will be entered into the Competition. Failure to answer any question (when there are any) correctly via the website will still result in any entrant still being charged.
+              </p>
+              <p>
+                3.5 As a condition of entering the Competition, Entrants must ensure that, by doing so, they do not contravene any laws of their country of residence. The Promoter will not be liable in any way if an Entrant enters the Competition unlawfully;
+              </p>
+              <p>
+                3.6 The Entrants and the promoter recognise that the Competition, its administration and all associated activities are governed by English Law and the promoter and Entrants recognise that the County or High Courts of England shall have exclusive jurisdiction in the event of any dispute arising out of the Competition or its administration;
+              </p>
+              <p>
+                3.7 The promoter reserves the right to refuse or disqualify any entrant if it has reasonable grounds for believing that an entrant has contravened any of these terms and conditions or acted in a way that is reasonably considered by the Promoter to be illegal.
+              </p>
+              <p>
+                3.8 All Entries will become the property of the promoter on receipt and will not be returned.
+              </p>
+              <p>
+                3.9 availability and pricing of competitions is at the discretion of the promoter and will be specified at the point of sale on the website.
+              </p>
+            </div>
           </section>
 
-          {/* <p className="text-sm text-gray-400 pt-8 border-t border-gray-700">
-            Last updated: {new Date().toLocaleDateString()}
-          </p> */}
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              4. Entry
+            </h2>
+            <div className="space-y-4">
+              <p>
+                4.1 In answering the Question (when there are any), the Entrant recognises that they must exercise skill, Knowledge and judgement to give the correct Answers;
+              </p>
+              <p>
+                4.2 There is no limit to the number of times a person can enter a competition. Unless the competition specifies a capped number of entries per person. Creating multiple accounts to enter prizes with capped ticket amounts will be seen as a breach of fair use and could potentially void entry. Refunds will not be given to those who create multiple accounts to exceed maximum entries.
+              </p>
+              <p>
+                4.3 To conclude an entry into the Competition, an Entrant will be asked to provide their contact details (including postal and e-mail addresses and a telephone number) and card payment details (for entry fee only). Once the Entry is submitted, the Entrant's card payment will be electronically approved.
+              </p>
+              <p>
+                4.4 When the Maximum Number of Entries is reached, the Competition will close. Competitions will run until the total available ticket allocation has been allotted or earlier if deemed by the promoter.
+              </p>
+              <p>
+                4.5 All Entries to the Competition are final and no refunds shall be made at any time or for any reason, except in the case of entries submitted after the Closing Date or if the competition gets cancelled.
+              </p>
+              <p>
+                4.6 The promoter's decision is final and no correspondence will be entered into about the result of the Competition following the determination of the Winner as described above.
+              </p>
+              <p>
+                4.7 Each Entrant agrees that the usual requirement under the Consumer Protection (Distance Selling) Regulations 2000 for any goods and services ordered online to be supplied within 30 days will not apply to this Prize Competition. We will export your competition entries in a CSV file from our website onto an Microsoft excel document, the actual entry number you are randomly allocated may differ from the random number you are allocated on excel but the chance to win and the total entries will remain the same for transparency and fairness.
+              </p>
+              <p>
+                4.8 Free Entry Route: – If you wish to enter any of our competitions for free then you must send a stamped, unenclosed letter stating: Which competition you would like to take part in, the answer to the question (when there are any) specific to that particular competition along with your personal details as follows Name, Address, DOB, Contact Phone Number, email address and correct answer for that competition. Postal entry is available until the closing date of the draw. The closing date of the draw is once all of the tickets have been sold, unless stated otherwise by the promoter. A pre-paid letter or post card are acceptable. Postal entrants are also entered into the instant win element of the competition, in the same way as paid entrants (whereby instant wins are applicable). Where a postal entrant was to win an instant win prize, the promoter will contact the entrant using the contact information provided on the entry and arrange a bank transfer to pay out the instant win prize. The free entries will be treated in the exact same manner as the paid entries; in addition, the free entries will be entered into the 'Live Draws' in the same manner. Hand delivered postal entries are not valid postal entries. Bulk entries received will be treated as one single entry. Any postal entry failing to meet the requirements will not be entered into the relevant competition. You can't use non-barcoded everyday stamps on postal entries. Postal entries must be received before the draw closes or it will not be entered into the draw. If the number of paid entries reaches any cap or limit before your entry is received you will not be entered into the draw.
+              </p>
+              <p>
+                The promoter will not acknowledge or engage in correspondence regarding receipt of your free entry or if your answer (if applicable) is correct. Standard competition terms and conditions apply for free entries. Alternatively, you can gain a free entry if you win one of our like share and tag competitions which we run.
+              </p>
+              <p>
+                4.9 Send entries to address All free entries must be received before the close of the competition, any entries that fail to follow the criteria mentioned above will be void as per any Entry received
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              5. Closing The Competition
+            </h2>
+            <div className="space-y-4">
+              <p>
+                5.1 The number of entries must reach the minimum allocated ticket requirement before the competition can be drawn unless otherwise stated.
+              </p>
+              <p>
+                5.2 If the Winner cannot be contacted by the Promoter within 7 days of being notified of their status as the Winner by e-mail, telephone, facebook or mail via the contact details submitted along with their entry, then the Promoter reserves the right to then select an Alternate winner, who will then have 7 days to accept the prize following the same routes of contact as the original Winner. The original winner will have no claim to the prize after the Alternate Winner is selected
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              6. Contest/Selecting Winner
+            </h2>
+            <div className="space-y-4">
+              <p>
+                6.1 The winning Entrant will be selected via a live draw, each entrant will be assigned a number which appears in their active ticket section. Each draw type may vary, generally a random number generator will be used, however entrants will be notified of how the draw will be done. All draws will be made live within 48 hours of the competition closing.
+              </p>
+              <p>
+                Ringtone Riches guarantees that all winners will be picked at random via the chosen draw method.
+              </p>
+              <p>
+                6.2 Full details of the draw date/time will be confirmed once the competition has been concluded via Facebook and or our website. This decision will be made within 48 hours of the close of the competition.
+              </p>
+              <p>
+                6.3 Entry lists will be displayed on our website page with the draw date and time included.
+              </p>
+              <p>
+                6.4 There will only be one winner per competition unless otherwise stated.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              7. Prize
+            </h2>
+            <div className="space-y-4">
+              <p>
+                7.1 The Promoter owns any prize offered from the time the competition is live until successful handover is completed as outlined in section 6.3
+              </p>
+              <p>
+                7.2 The Promoter makes no representations and gives no warranties about the Prize, its value, its condition or any other information provided on the Website. The Promoter makes no representations and gives no warranties that the information provide on the Website is accurate, complete or up to date. The Promoter does not imply or give any warranty or accept any valuation to the prize. The Entrant must make up their own decision through their own enquiries and legal advice before entering the competition.
+              </p>
+              <p>
+                7.3 The prize will only be that as awarded at the time of the draw, no alternatives will be offered under any circumstance.
+              </p>
+              <p>
+                7.4 Collection of the prize is the sole responsibility of the winner, from the Promoter's address unless otherwise agreed between the Promoter and the Winner.
+              </p>
+              <p>
+                7.5 The winner will be required to provide proof of identity and proof of entry into the competition at the time that the prize is collected.
+              </p>
+              <p>
+                7.6 The prize for the competition is described on the Website (the "Prize"). Details of the Prize are, to the best of the Promoter's knowledge, information and belief, correct as at the Opening Date.
+              </p>
+              <p>
+                7.8 The Prize may be supplied by a third-party supplier (the "Supplier"). Details of the Supplier (if any) will be provided on the Website. The promoter guarantees a minimum of 3* accommodation on all holiday prizes but all holiday prizes (unless stated) will be arranged specifically with the winner based in their needs.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              8. Miscellaneous
+            </h2>
+            <div className="space-y-4">
+              <p>
+                8.1 With the winners consent only, if the winner agrees to allow the Promoter to display his or her name on the Website in accordance with the Privacy Policy. The name and town of residence of the Winner will be posted on the Website for the purposes of announcing the Winner of the Competition within 24 hours of the Winner being determined.
+              </p>
+              <p>
+                8.2 Only with the winner's consent on the acceptance of the prize can the promoter use Photo(s) and or video(s) taken for promotional purposes, both directly after their win and in any future promotional material.
+              </p>
+              <p>
+                8.3 Entrants give consent for the Promoter to enter their personal details into their database and to use the information in accordance with the provisions of the Data Protection Act 1998 and subject to the terms of Privacy Policy.
+              </p>
+              <p>
+                8.4 The Promoter reserves the right to cancel the Competition at any time either before or after tickets have been sold. If the Competition is cancelled, the Promoter will return any Entry Fees paid to each Entrant (either by bank card refund or by cheque and in one combined payment where several entries have been made by a competitor or store credit). Where the Entry Fee is returned, the Promoter shall have no further liability to the Entrant or to any other person;
+              </p>
+              <p>
+                8.5 Save for death or personal injury the Promoter will not be liable for any loss (including economic loss) suffered to or sustained by any person or property as a result of any act or omission of the Promoters, nor will their servants or their agents in developing, planning and Administrating the Competition, distributing the Prize to the Winner or following the distribution of the Prize; The Promoter accepts no liability for errors or omissions contained within the Prize details, description or specification or any other part of the Website.
+              </p>
+              <p>
+                It is the responsibility of each Entrant (and in particular the Winner) to satisfy him/herself as to the accuracy of any such details and/or any content of this website.
+              </p>
+              <p>
+                8.6 The Promoter will not be liable for any loss suffered by an Entrant as a result of incomplete entries or failed computer communications or for any loss suffered as a result of use of the Website.
+              </p>
+              <p>
+                8.7 Ringtone Riches will not be accountable for any cancellations in flights, bookings or other arrangements made via 3rd parties which are beyond their control. They will also not be bound to offer alternative solutions in replacement of prize trips for reasons beyond their control. this includes, weather, epidemics, pandemics, war, political unrest or any other forces beyond the operator's control. it will be the responsibility of the third-party booking agent to offer the best advice on steps to take.
+              </p>
+              <p>
+                8.8 The Promoter do not accept responsibility for entries which they do not receive due to failures in computer systems, other malfunctions, high Internet traffic, hardware failure, software failure, server faults or any other reason.
+              </p>
+              <p>
+                8.9 These competition rules shall not create or be construed as creating any form of contract, joint venture or other agreement between any Entrant and the Promoters.
+              </p>
+              <p>
+                8.10 An entry shall be declared void (without any refund being given) if the entrant engages in: (a) any form of fraud (actual or apparent); (b) fraudulent misrepresentation; (c) fraudulent concealment; (d) hacking or interference with the proper functioning of the website; or (e) amending, or unauthorised use of, any of the code that constitutes the Website.
+              </p>
+              <p>
+                8.11 The Promoter reserves the right to amend these terms and conditions at any time. Any changes will be immediately published on the competition website.
+              </p>
+              <p>
+                8.12 The winner has sole responsibility for any duty/VAT as a result of taking delivery of a prize unless otherwise stated and also will be liable for any personal tax due on winnings.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              9. Eligibility
+            </h2>
+            <div className="space-y-4">
+              <p>
+                9.1 The competition is only open to all residents in the United Kingdom and Republic of Ireland aged 18 years or over, except: (a) employees of the Promoter; (b) employees of agents or suppliers of the Promoter, who are professionally connected with the competition or its administration; or (c) members of the immediate families or households of (a) and (b) above.
+              </p>
+              <p>
+                9.2 By entering the competition, you confirm that you are eligible to do so and eligible to claim any prize you may win. The Promoter may require you to provide proof that you are eligible to enter the competition. If you fail to provide the Promoter with any such proof or other information that they may require within a reasonable time, you may be disqualified from the competition.
+              </p>
+              <p>
+                9.3 The Promoter will not accept competition entries that are: (a) automatically generated by computer; or (b) incomplete.
+              </p>
+              <p>
+                9.4 The Promoter reserves all rights to disqualify you if your conduct is contrary to the spirit or intention of the prize competition.
+              </p>
+              <p>
+                9.5 No refunds of the entry fee will be given in any event, including; (a) if, following your entry into the competition, you subsequently find out that you are not eligible to enter the competition or claim the Prize; (b) if, following your entry into the competition the eligibility criteria for entering the competition or claiming the Prize changes and you are no longer eligible; or (c) if you are disqualified from the competition by the Promoter for any reason.
+              </p>
+              <p>
+                9.6 Entrants can enter the competition as many times as they wish until the maximum number of entries have been received. Entrants submitting free entries must submit each entry separately. Bulk entries, if received, will not be accepted and will only be counted as one single entry.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              10. Anti Money Laundering Policy
+            </h2>
+            <div className="space-y-4">
+              <p>
+                10.1. On top of complying with all conditions as laid out by "The Gambling Act 2005" in relation to prize competitions, Ringtone Riches has put in place measures to prevent its systems from being used for the purposes of money laundering, terrorist financing or any other criminal activity.
+              </p>
+              <p>
+                10.2 Ringtone Riches is committed to preventing money laundering and combat the financing of terrorism in order to minimise and manage its reputational risk, legal risk and regulatory risk. It is also committed to its wider social responsibility in preventing crime by not allowing its systems to be used to commit crimes. The promoter reserves the right to remove entries which come directly from Free Competition sites which inundate us with traffic.
+              </p>
+              <p>
+                10.3 In order to adhere to Anti Money Laundering regulations and requirements, Ringtone Riches shall: appoint a designated Money Laundering Reporting Officer (MLRO) whose responsibility it is to report possible acts of money laundering to the authorities. This role belongs to 'Robbie Watson'
+              </p>
+              <p>
+                10.4 Take reasonable steps to establish the identity of any person for whom it is proposed to provide its service.
+              </p>
+              <p>
+                10.5 Keep at all times a secure online list of all registered Players.
+              </p>
+              <p>
+                10.6 Retain identification and transactional documentation for each Player.
+              </p>
+              <p>
+                10.7 Provide initial and ongoing training to all relevant staff so that they are aware of their personal responsibilities and the procedures in respect of identifying Players, monitoring Player activity, record-keeping and reporting any unusual/suspicious transactions.
+              </p>
+              <p>
+                10.8 Ensure that this policy is reviewed and maintained regularly.
+              </p>
+              <p>
+                10.9 Examine, as much as is possible, the background and purpose of any complex or large transactions or groups of transactions which are likely, by their nature, to be related to money laundering or the funding of terrorism.
+              </p>
+              <p>
+                10.10 Not accept or open anonymous Accounts or Accounts in fictitious names such that the true beneficial owner is not known.
+              </p>
+              <p>
+                10.11 Not register a Player who is under eighteen (18) years of age.
+              </p>
+              <p>
+                10.12 Only register a single account in the name of a particular person.
+              </p>
+              <p>
+                10.13 Transfer payments of winnings or refunds back to the same route from where the funds originated, where possible.
+              </p>
+              <p>
+                10.14 Not accept cash from Players. Funds may be received from Players only by any of the approved methods.
+              </p>
+              <p>
+                10.15 Terminate a Player's registration if it becomes aware that a person has provided false information when onboarding.
+              </p>
+              <p>
+                10.16 Report any suspicion or knowledge of money laundering of terrorism financing to the authorities.
+              </p>
+              <p>
+                10.17 Cooperate with all relevant administrative, enforcement and judicial authorities in their endeavour to prevent and detect criminal activity.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              Ringtone Riches 'spin wheel' & other instant win wheels
+            </h2>
+            <div className="space-y-4">
+              <p>
+                The prize for any wheel competitions is assigned at random at the point of order, any wheel spin competitions featuring a wheel are operated as the other competitions and the wheel is an aesthetic feature for show. Should the wheel spin itself malfunction in any way, any win is at the discretion of Ringtone Riches management & director. The wheel spin will guarantee a single cash prize or site credit per spin, anything other than this would be classed as a malfunction. Another example of a malfunction would be the wheel landing on a prize of £4 for example, but during the spin identifying another prize amount. Instant win wheel competitions are all applicable for entrants to enter for FREE via postal entry and this is displayed in line with all other competitions.
+              </p>
+              <p>
+                'Win every spin' – We do not guarantee winning a cash prize on every spin, we guarantee to win a prize every spin that would be either a cash prize or site credit. The wheel artwork will display Cash prizes as '£500 cash for example' & site credits as '100 site credits' as another example. The actual aesthetic display for the wheel that spins display Cash prizes as a £ money bag symbol & the Site Credits as a token symbol. Once the wheel has span it will clearly display your prize in writing as an example: £2 Cash or 50 Ringtone Points. Ringtone Points is the same thing as site credits. In addition to this, you will also receive an email notifying you of the prize you have won. If this is a Ringtone Points then that will automatically update your account and if it's a cash prize we will contact you to arrange payment.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl text-white font-semibold mb-3">
+              Ringtone Riches site credits – 'Ringtone Points'
+            </h2>
+            <div className="space-y-4">
+              <p>
+                Ringtone Points are only to be used on applicable competitions and are not applicable to be used on instant win wheel competitions or any other competitions featuring a wheel. Ringtone Points are to be used on all other competitions that our website www.ringtoneriches.co.uk allows. If in any way the website malfunctions then Ringtone Points usage is at the discretion of Ringtone Riches management and director.
+              </p>
+              <p>
+                Ringtone Points are either won on instant win wheels or allocated by Ringtone Riches as a new customer, referral or other associated marketing activities. Ringtone Points cannot be exchanged for cash prizes. Entrants who enter applicable competitions using Ringtone Points & whom win a cash prize is however acceptable with our rules, terms and conditions.
+              </p>
+              <p>
+                If Ringtone credit amounts malfunction, if you are allocated far in excess of the correct amount then it is at the discretion of Ringtone Riches management and director. If you are allocated Ringtone Points by mistake then we reserve the right to remove them from your account.
+              </p>
+              <p>
+                Each Ringtone credit is the equivalent of £0.01p. For example, if you have 100 Ringtone Points on our platform, that is the same as having enough credits to enter a £1.00 competition once.
+              </p>
+            </div>
+          </section>
         </div>
       </main>
 
