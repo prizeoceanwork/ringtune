@@ -872,6 +872,7 @@ app.post("/api/create-scratch-order", isAuthenticated, async (req: any, res) => 
     res.json({
       success: true,
       orderId: order.id,
+      competitionId: competitionId,
       totalAmount,
       quantity,
       userBalance: {
@@ -1027,6 +1028,7 @@ app.post("/api/process-scratch-payment", isAuthenticated, async (req: any, res) 
 
       return res.json({
         success: true,
+        competitionId: order.competitionId,
         message: "Scratch card purchase completed",
         orderId: order.id,
         cardsPurchased: order.quantity,
@@ -1138,6 +1140,7 @@ app.get("/api/scratch-order/:orderId", isAuthenticated, async (req: any, res) =>
     res.json({
       order: {
         id: order.id,
+        competitionId: order.competitionId,
         quantity: order.quantity,
         totalAmount: order.totalAmount,
         status: order.status,

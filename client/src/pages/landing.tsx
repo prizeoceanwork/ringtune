@@ -72,12 +72,12 @@ export default function Landing() {
                 }`}
               >
                 {type === "all"
-                  ? "ALL COMPETITIONS"
+                  ? "ALL"
                   : type === "spin"
                   ? "SPIN WHEEL"
                   : type === "scratch"
                   ? "SCRATCH CARDS"
-                  : "INSTANT WIN"}
+                  : "COMPETITIONS"}
               </button>
             ))}
           </div>
@@ -85,25 +85,61 @@ export default function Landing() {
       </section>
 
       {/* Competitions Section */}
-      <section id="competitions" className="py-16 min-h-[60vh] flex items-center justify-center">
-        <div className="container mx-auto px-4 text-center">
-          {activeFilter === "instant" ? (
-            <p className="text-xl text-muted-foreground">Instant Win games coming soon! Stay tuned.</p>
-          ) : !isAuthenticated && (activeFilter === "spin" || activeFilter === "scratch") ? (
-            <p className="text-xl text-muted-foreground">Please login to play {activeFilter === "spin" ? "Spin Wheel" : "Scratch Card"}.</p>
-          ) : isLoading ? (
-            <p className="text-muted-foreground">Loading competitions...</p>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4  gap-6" id="competitionsGrid">
-              {filteredCompetitions
-                .filter((comp) => activeFilter === "all" || comp.type === activeFilter)
-                .map((competition) => (
-                  <CompetitionCard key={competition.id} competition={competition} />
-                ))}
-            </div>
-          )}
-        </div>
-      </section>
+     <section
+      id="competitions"
+      className="py-16 min-h-[60vh] flex items-center justify-center"
+    >
+  <div className="container mx-auto px-4 text-center">
+    {isLoading ? (
+      <p className="text-muted-foreground">Loading competitions...</p>
+    ) : filteredCompetitions.length === 0 ? (
+      <p className="text-muted-foreground">No competitions found.</p>
+    ) : activeFilter === "instant" ? (
+      <div
+        className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        id="competitionsGrid"
+      >
+        {filteredCompetitions
+          .filter((comp) => comp.type === "instant")
+          .map((competition) => (
+            <CompetitionCard key={competition.id} competition={competition} />
+          ))}
+      </div>
+    ) : activeFilter === "spin" ? (
+      <div
+        className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        id="competitionsGrid"
+      >
+        {filteredCompetitions
+          .filter((comp) => comp.type === "spin")
+          .map((competition) => (
+            <CompetitionCard key={competition.id} competition={competition} />
+          ))}
+      </div>
+    ) : activeFilter === "scratch" ? (
+      <div
+        className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        id="competitionsGrid"
+      >
+        {filteredCompetitions
+          .filter((comp) => comp.type === "scratch")
+          .map((competition) => (
+            <CompetitionCard key={competition.id} competition={competition} />
+          ))}
+      </div>
+    ) : (
+      <div
+        className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        id="competitionsGrid"
+      >
+        {filteredCompetitions.map((competition) => (
+          <CompetitionCard key={competition.id} competition={competition} />
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
 
       {/* How to Play */}
       <section id="how-to-play" className="bg-card py-16">

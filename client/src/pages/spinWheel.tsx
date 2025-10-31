@@ -1,146 +1,62 @@
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import SpinWheel from "@/components/games/spinwheeltest";
-import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Competition } from "@shared/schema";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import FeaturedCompetitions from "./featuredCompetitions";
+import CompetitionCard from "@/components/competition-card";
 
 export default function SpinWheelPage() {
-  const { toast } = useToast();
-  const { isAuthenticated, user } = useAuth();
-  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
 
-  const { data: competitions = [] , isLoading} = useQuery({
+  const { data: competitions = [], isLoading } = useQuery<Competition[]>({
     queryKey: ["/api/competitions"],
   });
 
-  const { data: userTickets = [] } = useQuery({
-    queryKey: ["/api/user/tickets"],
-    enabled: !!isAuthenticated,
-  });
+  const [filteredCompetitions, setFilteredCompetitions] = useState<Competition[]>([]);
+  const [activeFilter, setActiveFilter] = useState("spin");
 
-  const spinCompetition = competitions.find((c: any) => c.type === "spin");
-  const spinTickets = userTickets.filter(
-    (t: any) => t.competitionId === spinCompetition?.id
-  );
-  const spinTicketCount = spinTickets.length;
-
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [gameResult, setGameResult] = useState<any>(null);
-  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
-    const [filteredCompetitions, setFilteredCompetitions] = useState<Competition[]>([]);
-const [activeFilter, setActiveFilter] = useState("spin");
-  const [, setLocation] = useLocation();
-  
-    useEffect(() => {
+  // 🔹 Filter competitions by type and auth state
+  useEffect(() => {
     if (!isAuthenticated) {
-      // Hide instant competitions for guests
       setFilteredCompetitions(
-        competitions.filter((c) => c.type !== "instant")
+        competitions.filter((c) => c.type === "spin" && c.type !== "instant")
       );
     } else {
-      setFilteredCompetitions(competitions);
+      setFilteredCompetitions(competitions.filter((c) => c.type === "spin"));
     }
   }, [competitions, isAuthenticated]);
-  
-  
-  
-    
-const handleFilterChange = (filterType: string) => {
-  setActiveFilter(filterType);
 
-  if (filterType === "all") {
-    setFilteredCompetitions(competitions);
-    setLocation("/"); // stay home instantly
-  } else if (filterType === "spin") {
-    setLocation("/spin-wheel");
-  } else if (filterType === "scratch") {
-    setLocation("/scratch-card");
-  } else if (filterType === "instant") {
-    setLocation("/instant");
-  } else {
-    setFilteredCompetitions(competitions.filter((c) => c.type === filterType));
-  }
-};
-
-  const playSpinWheelMutation = useMutation({
-    mutationFn: async (data: { winnerPrize: any }) => {
-      const response = await apiRequest("POST", "/api/play-spin-wheel", data);
-      console.log(data)
-      return response.json();
-    },
-    onSuccess: (result) => {
-      setGameResult(result);
-      setIsResultModalOpen(true);
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to play game",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSpinComplete = (winnerSegment: number, winnerLabel: string, winnerPrize: any) => {
-    if (!isAuthenticated || !user) {
-      toast({
-        title: "Login Required",
-        description: "Please login to play the spin wheel.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (parseFloat(user.balance || "0") < 2) {
-      toast({
-        title: "Insufficient Balance",
-        description: "You need at least £2 in your wallet to spin.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    queryClient.setQueryData(["/api/auth/user"], {
-      ...user,
-      balance: Number(user.balance ?? 0) - 2,
-    });
-
-    playSpinWheelMutation.mutate({ winnerPrize });
+  const handleFilterChange = (filterType: string) => {
+    setActiveFilter(filterType);
+    if (filterType === "all") setLocation("/");
+    else if (filterType === "spin") setLocation("/spin-wheel");
+    else if (filterType === "scratch") setLocation("/scratch-card");
+    else if (filterType === "instant") setLocation("/instant");
   };
 
- 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
 
-
-      {/* Welcome Section */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/5">
-        <div className="container mx-auto px-4 py-12">
-          <div className="text-center space-y-6">
-            <div className="relative">
-                           {competitions.length > 0 ? (
-                             <FeaturedCompetitions competitions={competitions} />
-                           ) : (
-                             <div className="text-center text-muted-foreground py-12">
-                               Loading featured competitions...
-                             </div>
-                           )}
-                         </div>
-          </div>
+        <div className="container mx-auto px-4 py-12 text-center">
+          {competitions.length > 0 ? (
+            <FeaturedCompetitions competitions={competitions} />
+          ) : (
+            <div className="text-muted-foreground py-12">
+              Loading featured competitions...
+            </div>
+          )}
         </div>
       </section>
 
-       <section className="bg-card border-y border-border">
+      {/* Filter Buttons */}
+      <section className="bg-card border-y border-border">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-wrap justify-center gap-4">
             {["all", "spin", "scratch", "instant"].map((type) => (
@@ -150,7 +66,7 @@ const handleFilterChange = (filterType: string) => {
                 className={`competition-filter px-6 py-3 rounded-lg font-medium transition-colors ${
                   activeFilter === type
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted gradient hover:bg-primary hover:text-primary-foreground"
+                    : "bg-muted hover:bg-primary hover:text-primary-foreground"
                 }`}
               >
                 {type === "all"
@@ -166,52 +82,30 @@ const handleFilterChange = (filterType: string) => {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-16 text-center">
-        <SpinWheel
-          onSpinComplete={handleSpinComplete}
-          isSpinning={isSpinning}
-          setIsSpinning={setIsSpinning}
-          ticketCount={spinTicketCount}
-        />
-      </section>
-
-<Dialog open={isResultModalOpen} onOpenChange={setIsResultModalOpen}>
-  <DialogContent className="max-w-md flex flex-col justify-center items-center text-center">
-    <DialogHeader>
-      <DialogTitle className="text-3xl font-bold">
-        {gameResult?.prize?.amount && 
-         gameResult.prize.amount !== 0 && 
-         gameResult.prize.amount !== "0" 
-          ? "🎉 You Won!" 
-          : "😔 Better Luck Next Time"
-        }
-      </DialogTitle>
-
-      {gameResult?.prize && (
-        <div className="mt-4 text-lg text-muted-foreground">
-          <p className="font-semibold">{gameResult.prize.brand}</p>
-          <p className="text-primary">
-            {(() => {
-              const amount = gameResult.prize.amount;
-              if (!amount || amount === 0 || amount === "0") {
-                return "No prize this time";
-              }
-              return typeof amount === 'number' ? `£${amount}` : amount;
-            })()}
-          </p>
+      {/* 🔹 Competitions Grid */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          {isLoading ? (
+            <p className="text-center text-muted-foreground">
+              Loading competitions...
+            </p>
+          ) : filteredCompetitions.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredCompetitions.map((competition) => (
+                <CompetitionCard
+                  key={competition.id}
+                  competition={competition}
+                  authenticated={isAuthenticated}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground">
+              No spin wheel competitions found.
+            </p>
+          )}
         </div>
-      )}
-    </DialogHeader>
-    <DialogFooter>
-      <button
-        onClick={() => setIsResultModalOpen(false)}
-        className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:opacity-90"
-      >
-        Close
-      </button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+      </section>
 
       <Footer />
     </div>

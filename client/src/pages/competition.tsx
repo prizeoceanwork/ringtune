@@ -77,53 +77,80 @@ export default function CompetitionPage() {
     const canBuyMore = isFreeGiveaway ? userTicketCount < maxTicketsForGiveaway : true;
     const remainingTickets = maxTicketsForGiveaway - userTicketCount;
 
-  const purchaseTicketMutation = useMutation({
-    mutationFn: async (data: { competitionId: string; quantity: number }) => {
-      const response = await apiRequest("POST", "/api/purchase-ticket", data);
-      console.log("Purchase response:", data);
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.paymentMethod === "wallet") {
-        console.log("Wallet payment successful");
-        console.log(data);
-        toast({
-          title: "Success",
-          description: "Your ticket(s) have been purchased using your wallet!",
-        });
-        // ✅ Refresh user, tickets, and transactions data
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/competitions", id] });
-        queryClient.invalidateQueries({ queryKey: ["/api/competitions"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/user/orders"] });
-      } else {
-        setLocation(
-          `/checkout/${data.orderId}?client_secret=${data.clientSecret}&quantity=${quantity}`
-        );
-      }
-    },
+const purchaseTicketMutation = useMutation({
+  mutationFn: async (data: { competitionId: string; quantity: number }) => {
+    const competitionType = competition?.type?.toLowerCase();
 
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Login Required",
-          description: "Please login to purchase tickets",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 1000);
-        return;
-      }
+    if (competitionType === "spin") {
+      // 🌀 Create Spin Wheel order
+      const response = await apiRequest("POST", "/api/create-spin-order", data);
+      return response.json();
+    } 
+    else if (competitionType === "scratch") {
+      // 🎯 Create Scratch Card order
+      const response = await apiRequest("POST", "/api/create-scratch-order", data);
+      return response.json();
+    } 
+    else {
+      // 🎟️ Regular competition
+      const response = await apiRequest("POST", "/api/purchase-ticket", data);
+      return response.json();
+    }
+  },
+
+  onSuccess: (data) => {
+    const competitionType = competition?.type?.toLowerCase();
+
+    if (competitionType === "spin") {
+      // ✅ Redirect to spin billing
+      setLocation(`/spin-billing/${data.orderId}`);
+      return;
+    }
+
+    if (competitionType === "scratch") {
+      // ✅ Redirect to scratch billing
+      setLocation(`/scratch-billing/${data.orderId}`);
+      return;
+    }
+
+    // 🎟️ Regular purchase flow
+    if (data.paymentMethod === "wallet") {
       toast({
-        title: "Error",
-        description: error.message || "Failed to purchase ticket",
+        title: "Success",
+        description: "Your ticket(s) have been purchased using your wallet!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/competitions", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/competitions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/orders"] });
+    } else {
+      setLocation(
+        `/checkout/${data.orderId}?client_secret=${data.clientSecret}&quantity=${quantity}`
+      );
+    }
+  },
+
+  onError: (error) => {
+    if (isUnauthorizedError(error)) {
+      toast({
+        title: "Login Required",
+        description: "Please login to continue.",
         variant: "destructive",
       });
-    },
-  });
+      setTimeout(() => (window.location.href = "/login"), 1000);
+      return;
+    }
+    toast({
+      title: "Error",
+      description: error.message || "Failed to process purchase",
+      variant: "destructive",
+    });
+  },
+});
+
+
 
  const handlePurchase = () => {
   if (!isAuthenticated) {

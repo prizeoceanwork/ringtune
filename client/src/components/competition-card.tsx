@@ -20,15 +20,15 @@ export default function CompetitionCard({ competition, authenticated = false }: 
   // 🟡 Short home page descriptions
   const shortDescription =
     competition.type === "spin"
-      ? "Rev it. Spin it. Win it! 🏎️ Unlock massive cash & ringtone rewards."
+      ? "Rev it. Spin it. Win it! 🏎️ Unlock massive cash & ringtone rewards – WIN UP TO £15,000 INSTANTLY! 💷"
       : competition.type === "scratch"
-      ? "Scratch your way to legendary wins around the world! 🌍💰"
+      ? "Scratch your way to legendary wins around the world! 🌍💰-WIN UP TO £5,000 INSTANTLY! 💷"
       : "";
 
   return (
     <>
       <div 
-        className="competition-card bg-card h-fit rounded-xl border border-border overflow-hidden" 
+        className="competition-card bg-card h-fit rounded-sm border border-border  overflow-hidden" 
         data-type={competition.type}
         data-testid={`card-competition-${competition.id}`}
       >
@@ -42,7 +42,7 @@ export default function CompetitionCard({ competition, authenticated = false }: 
           data-testid={`img-competition-${competition.id}`}
         />
 
-        <div className="p-6 space-y-4">
+        <div className="p-2 sm:p-6 mb-8 sm:mb-0 space-y-4">
           <h3 
             className="text-sm sm:text-lg font-bold text-foreground line-clamp-2" 
             data-testid={`text-title-${competition.id}`}
@@ -59,7 +59,7 @@ export default function CompetitionCard({ competition, authenticated = false }: 
 
           {competition.maxTickets && (
             <div className="bg-muted rounded-lg p-3 mb-4">
-              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mb-1">
+              <div className="flex justify-between text-[10px] sm:text-sm text-muted-foreground mb-1">
                 <span>{competition.soldTickets} sold</span>
                 <span>{competition.maxTickets} total</span>
               </div>
@@ -85,11 +85,11 @@ export default function CompetitionCard({ competition, authenticated = false }: 
 
           <button 
             onClick={handleViewCompetition}
-            className="w-full bg-primary text-primary-foreground text-sm md:text-lg py-2 sm:py-3 rounded-md font-bold hover:opacity-90 transition-opacity"
+            className="w-full bg-primary text-primary-foreground text-xs md:text-lg py-2 sm:py-3 rounded-sm font-bold hover:opacity-90 transition-opacity"
             data-testid={`button-enter-${competition.id}`}
           >
             {competition.type === "scratch"
-              ? "SCRATCH NOW"
+              ? "BUY NOW"
               : competition.type === "spin"
               ? "ENTER NOW"
               : "ENTER NOW"}

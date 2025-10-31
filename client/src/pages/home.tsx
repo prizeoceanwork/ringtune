@@ -141,11 +141,7 @@ const handleFilterChange = (filterType: string) => {
               ))}
             </div>
 
-            <div className="text-center mt-12">
-              <button className="bg-muted text-muted-foreground px-8 py-4 rounded-lg font-medium hover:bg-primary hover:text-primary-foreground transition-colors">
-                LOAD MORE COMPETITIONS
-              </button>
-            </div>
+            
           </>
         ) : (
           <div className="text-center text-xl text-muted-foreground">

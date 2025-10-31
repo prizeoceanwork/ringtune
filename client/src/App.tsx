@@ -32,6 +32,9 @@ import PrivacyPolicy from "./pages/privacy-policy";
 import ScratchCardPage from "./pages/scratch-card";
 import instant from "./pages/instant";
 import BeAware from "./pages/beAware";
+import SpinBilling from "./pages/spinBilling";
+import ScratchBilling from "./pages/scratchBilling";
+import ScratchGamePage from "./pages/scratchGamePage";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -75,6 +78,10 @@ function Router() {
           <Route path="/cancelled" component={CheckoutCancelled} />
           <Route path="/ringtune-points" component={RingtonePoints} />
           <Route path="/scratch" component={scratchcard} />
+          <Route path="/spin-billing/:orderId" component={SpinBilling} />
+          <Route path="/scratch-billing/:orderId" component={ScratchBilling} />
+          <Route path="/scratch/:competitionId/:orderId" component={ScratchGamePage} />
+
 
         </>
       )}

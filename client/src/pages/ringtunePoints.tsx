@@ -101,7 +101,7 @@ export default function RingtonePoints() {
                      
                     </div>
                   </div>
-    <div className="bg-card max-w-4xl mx-auto rounded-lg border border-border p-6">
+    <div className="bg-card max-w-3xl mx-auto rounded-lg border border-border p-6">
       <h3 className="text-xl font-bold mb-4">Ringtone Points</h3>
       
       <div className="space-y-4">
@@ -117,7 +117,7 @@ export default function RingtonePoints() {
           </span>
         </div>
 
-        {ringtonePoints >= 100 && (
+        {/* {ringtonePoints >= 100 && (
           <div className="space-y-3 pt-4 border-t border-border">
             <label className="text-sm font-medium">Convert to Wallet</label>
             <div className="flex gap-2">
@@ -152,13 +152,13 @@ export default function RingtonePoints() {
               {convertMutation.isPending ? "Converting..." : "Convert to Wallet"}
             </button>
           </div>
-        )}
+        )} */}
 
-        {ringtonePoints < 100 && (
+        {/* {ringtonePoints < 100 && (
           <div className="text-sm text-muted-foreground pt-4 border-t border-border">
             You need at least 100 points to convert to wallet balance.
           </div>
-        )}
+        )} */}
       </div>
     </div>
     </div>

@@ -60,7 +60,7 @@ export default function FeaturedCompetitions({ competitions }: FeaturedCompetiti
 
                     <button
                       onClick={() => handleViewCompetition(competition.id)}
-                      className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold py-3 md:py-4 px-8 md:px-12 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-lg md:text-xl"
+                      className="bg-primary text-primary-foreground font-bold py-3 md:py-4 px-8 md:px-12 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-lg md:text-xl"
                     >
                       ENTER NOW
                     </button>

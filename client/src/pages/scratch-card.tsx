@@ -2,13 +2,21 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import ScratchCardTest from "@/components/games/scratch-card-test";
+import CompetitionCard from "@/components/competition-card";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import FeaturedCompetitions from "./featuredCompetitions";
+import { Competition } from "@shared/schema";
 
 export default function ScratchCardPage() {
   const { toast } = useToast();
@@ -33,30 +41,24 @@ export default function ScratchCardPage() {
   const [gameResult, setGameResult] = useState<any>(null);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
-    const [filteredCompetitions, setFilteredCompetitions] = useState<Competition[]>([]);
-      const [activeFilter, setActiveFilter] = useState("scratch");
-    const [, setLocation] = useLocation();
-    
-      useEffect(() => {
-      if (!isAuthenticated) {
-        // Hide instant competitions for guests
-        setFilteredCompetitions(
-          competitions.filter((c) => c.type !== "instant")
-        );
-      } else {
-        setFilteredCompetitions(competitions);
-      }
-    }, [competitions, isAuthenticated]);
-    
-    
-    
-      
+  const [filteredCompetitions, setFilteredCompetitions] = useState<Competition[]>([]);
+  const [activeFilter, setActiveFilter] = useState("scratch");
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setFilteredCompetitions(competitions.filter((c) => c.type !== "instant"));
+    } else {
+      setFilteredCompetitions(competitions);
+    }
+  }, [competitions, isAuthenticated]);
+
   const handleFilterChange = (filterType: string) => {
     setActiveFilter(filterType);
-  
+
     if (filterType === "all") {
       setFilteredCompetitions(competitions);
-      setLocation("/"); // stay home instantly
+      setLocation("/");
     } else if (filterType === "spin") {
       setLocation("/spin-wheel");
     } else if (filterType === "scratch") {
@@ -68,49 +70,48 @@ export default function ScratchCardPage() {
     }
   };
 
-  const playScratchCardMutation = useMutation({
-    mutationFn: async (data: { winnerPrize: any }) => {
-      const response = await apiRequest("POST", "/api/play-scratch-card", data);
-      return response.json();
-    },
-    onSuccess: (result) => {
-      setGameResult(result);
-      setIsResultModalOpen(true);
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to play scratch card",
-        variant: "destructive",
-      });
-    },
-  });
+  // const playScratchCardMutation = useMutation({
+  //   mutationFn: async (data: { winnerPrize: any }) => {
+  //     const response = await apiRequest("POST", "/api/play-scratch-card", data);
+  //     return response.json();
+  //   },
+  //   onSuccess: (result) => {
+  //     setGameResult(result);
+  //     setIsResultModalOpen(true);
+  //     queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+  //   },
+  //   onError: (error: any) => {
+  //     toast({
+  //       title: "Error",
+  //       description: error.message || "Failed to play scratch card",
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-     <Header />
-    
-    
-          {/* Welcome Section */}
-          <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/5">
-            <div className="container mx-auto px-4 py-12">
-              <div className="text-center space-y-6">
-                <div className="relative">
-                               {competitions.length > 0 ? (
-                                 <FeaturedCompetitions competitions={competitions} />
-                               ) : (
-                                 <div className="text-center text-muted-foreground py-12">
-                                   Loading featured competitions...
-                                 </div>
-                               )}
-                             </div>
-              </div>
-            </div>
-          </section>
+      <Header />
 
-        
-       <section className="bg-card border-y border-border">
+      {/* Featured Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/5">
+        <div className="container mx-auto px-4 py-12">
+          <div className="text-center space-y-6">
+            <div className="relative">
+              {competitions.length > 0 ? (
+                <FeaturedCompetitions competitions={competitions} />
+              ) : (
+                <div className="text-center text-muted-foreground py-12">
+                  Loading featured competitions...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Filter Buttons */}
+      <section className="bg-card border-y border-border">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-wrap justify-center gap-4">
             {["all", "spin", "scratch", "instant"].map((type) => (
@@ -136,46 +137,33 @@ export default function ScratchCardPage() {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-16 text-center">
+      
 
-        <ScratchCardTest
-          onScratchComplete={(winnerPrize: any) => {
-            if (playScratchCardMutation.isPending) return;
-
-            if (!isAuthenticated || !user) {
-              toast({
-                title: "Login Required",
-                description: "Please login to play scratch card.",
-                variant: "destructive",
-              });
-              return;
-            }
-
-            if (parseFloat(user.balance || "0") < 2) {
-              toast({
-                title: "Insufficient Balance",
-                description: "You need at least £2 in your wallet to play.",
-                variant: "destructive",
-              });
-              return;
-            }
-
-            queryClient.setQueryData(["/api/auth/user"], {
-              ...user,
-              balance: Number(user.balance ?? 0) - 2,
-            });
-
-            playScratchCardMutation.mutate({ winnerPrize });
-          }}
-          scratchTicketCount={scratchTicketCount}
-        />
+      {/* Scratch Competitions Grid */}
+      <section id="competitions" className="py-16 min-h-[60vh] flex items-center justify-center">
+        <div className="container mx-auto px-4 text-center">
+          {filteredCompetitions.filter((comp) => comp.type === "scratch").length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="competitionsGrid">
+              {filteredCompetitions
+                .filter((comp) => comp.type === "scratch")
+                .map((competition) => (
+                  <CompetitionCard key={competition.id} competition={competition} />
+                ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No scratch card competitions found.</p>
+          )}
+        </div>
       </section>
 
+      {/* Result Modal */}
       <Dialog open={isResultModalOpen} onOpenChange={setIsResultModalOpen}>
         <DialogContent className="max-w-md flex flex-col justify-center items-center text-center">
           <DialogHeader>
             <DialogTitle className="text-3xl font-bold">
-              {gameResult?.prize?.amount > 0 ? "🎉 You Won!" : "😔 Better Luck Next Time"}
+              {gameResult?.prize?.amount > 0
+                ? "🎉 You Won!"
+                : "😔 Better Luck Next Time"}
             </DialogTitle>
           </DialogHeader>
           <DialogFooter>
