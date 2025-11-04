@@ -73,7 +73,23 @@ function generateScratchGrid(mode: "tight" | "loose" = "loose") {
 
   return { images, isWinner };
 }
+// Add this function to load/save scratch history
+const loadScratchHistory = (): { status: string; prize: { type: string; value: string } }[] => {
+  try {
+    const saved = localStorage.getItem('scratchCardHistory');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
 
+const saveScratchHistory = (history: { status: string; prize: { type: string; value: string } }[]) => {
+  try {
+    localStorage.setItem('scratchCardHistory', JSON.stringify(history));
+  } catch (error) {
+    console.error('Failed to save scratch history:', error);
+  }
+};
 
 export default function ScratchCardTest({ onScratchComplete, mode = "tight", scratchTicketCount }: ScratchCardProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -87,6 +103,9 @@ const hasCompletedRef = useRef(false);
   const [selectedPrize, setSelectedPrize] = useState<{ type: string; value: string }>({ type: "none", value: "0" });
   const [images, setImages] = useState<any[]>([]);
   const [isWinner, setIsWinner] = useState(false);
+ const [scratchHistory, setScratchHistory] = useState<
+  { status: string; prize: { type: string; value: string } }[]
+>([]);
 
   const cashPrizes = mode === "tight" ? ["0.10", "0.25"] : ["0.25", "0.50", "1.00"];
   const ringtunePrizes = ["50", "100", "250", "500", "1000"];
@@ -95,13 +114,73 @@ const hasCompletedRef = useRef(false);
     ...ringtunePrizes.map((p) => ({ type: "points", value: p })),
   ];
 
+    // ✅ SIMPLIFIED INITIALIZATION - Only run once when scratchTicketCount changes
   useEffect(() => {
-    // setup new session
+    if (!scratchTicketCount) return;
+
+    const savedHistory = loadScratchHistory();
+    
+    // If we have saved history that matches current count, use it
+    if (savedHistory.length === scratchTicketCount) {
+      setScratchHistory(savedHistory);
+    } 
+    // If saved history exists but count doesn't match, adjust it
+    else if (savedHistory.length > 0) {
+      const adjustedHistory = adjustHistoryToCount(savedHistory, scratchTicketCount);
+      setScratchHistory(adjustedHistory);
+    }
+    // No saved history, create fresh
+    else {
+      setScratchHistory(
+        Array.from({ length: scratchTicketCount }, () => ({
+          status: "Not Scratched",
+          prize: { type: "none", value: "-" },
+        }))
+      );
+    }
+  }, [scratchTicketCount]);
+
+  // Helper function to adjust history while preserving all data
+  const adjustHistoryToCount = (history: any[], targetCount: number) => {
+    if (history.length === targetCount) return history;
+    
+    if (history.length < targetCount) {
+      // Add new unscratched entries
+      const newEntries = Array.from({ length: targetCount - history.length }, () => ({
+        status: "Not Scratched",
+        prize: { type: "none", value: "-" },
+      }));
+      return [...history, ...newEntries];
+    } else {
+      // We have more history than needed - NEVER remove any rows!
+      // Just return the original history, the table will show all
+      return history;
+    }
+  };
+
+  // ✅ Save to localStorage whenever scratchHistory changes
+  useEffect(() => {
+    if (scratchHistory.length > 0) {
+      saveScratchHistory(scratchHistory);
+    }
+  }, [scratchHistory]);
+
+  // ✅ Clear localStorage only when explicitly needed (like when leaving competition)
+  // useEffect(() => {
+  //   return () => {
+  //     // Only clear if we're completely done with all scratches
+  //     if (scratchTicketCount === 0) {
+  //       localStorage.removeItem('scratchCardHistory');
+  //     }
+  //   };
+  // }, [scratchTicketCount]);
+
+  // Setup new scratch card session
+  useEffect(() => {
     const { images, isWinner } = generateScratchGrid(mode);
     setImages(images);
     setIsWinner(isWinner);
     setSelectedPrize(allPrizes[Math.floor(Math.random() * allPrizes.length)]);
-
     initCanvas();
   }, [sessionKey]);
 
@@ -188,7 +267,7 @@ const hasCompletedRef = useRef(false);
     if (!ctx) return;
     
     // Make brush size responsive based on canvas size
-    const brush = Math.max(15, canvas.clientWidth * 0.04);
+    const brush = Math.max(15, canvas.clientWidth * 0.09);
     
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
@@ -200,49 +279,61 @@ const hasCompletedRef = useRef(false);
 
 
 
-  function checkPercentScratched(force = false) {
-    rafRef.current = null;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const w = canvas.width;
-    const h = canvas.height;
-    const data = ctx.getImageData(0, 0, w, h).data;
+ function checkPercentScratched(force = false) {
+  rafRef.current = null;
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  const data = ctx.getImageData(0, 0, w, h).data;
 
-    let total = 0,
-      cleared = 0;
-    for (let y = 0; y < h; y += SAMPLE_GAP) {
-      for (let x = 0; x < w; x += SAMPLE_GAP) {
-        const alpha = data[(y * w + x) * 4 + 3];
-        total++;
-        if (alpha === 0) cleared++;
-      }
-    }
-
-    const percent = cleared / total;
-    setPercentScratched(Math.round(percent * 100));
-
-    if (percent >= AUTO_CLEAR_THRESHOLD && !revealed && !hasCompletedRef.current) {
-      hasCompletedRef.current = true;
-      stopScratchSound();
-      setRevealed(true);
-      setTimeout(() => {
-        clearOverlayInstant();
-        if (isWinner) {
-          onScratchComplete?.(selectedPrize);
-        } else {
-          onScratchComplete?.({ type: "none", value: "Lose" });
-        }
-
-        // 🧩 Auto-reset after short delay
-        setTimeout(() => {
-          hasCompletedRef.current = false;
-          setSessionKey((k) => k + 1);
-        }, 1000);
-      }, 400);
+  let total = 0,
+    cleared = 0;
+  for (let y = 0; y < h; y += SAMPLE_GAP) {
+    for (let x = 0; x < w; x += SAMPLE_GAP) {
+      const alpha = data[(y * w + x) * 4 + 3];
+      total++;
+      if (alpha === 0) cleared++;
     }
   }
+
+  const percent = cleared / total;
+  setPercentScratched(Math.round(percent * 100));
+
+  if (percent >= AUTO_CLEAR_THRESHOLD && !revealed && !hasCompletedRef.current) {
+    hasCompletedRef.current = true;
+    stopScratchSound();
+    setRevealed(true);
+    setTimeout(() => {
+      clearOverlayInstant();
+      const prizeWon = isWinner ? selectedPrize : { type: "none", value: "Lose" };
+      onScratchComplete?.(prizeWon);
+
+      // ✅ SIMPLE UPDATE - Just find and update the first unscratched ticket
+        setScratchHistory((prev) => {
+          const updated = [...prev];
+          const firstUnplayedIndex = updated.findIndex((s) => s.status === "Not Scratched");
+          
+          if (firstUnplayedIndex !== -1) {
+            updated[firstUnplayedIndex] = {
+              status: "Scratched",
+              prize: prizeWon,
+            };
+          }
+          
+          return updated;
+        });
+
+      // Auto-reset after short delay
+      setTimeout(() => {
+        hasCompletedRef.current = false;
+        setSessionKey((k) => k + 1);
+      }, 1000);
+    }, 400);
+  }
+}
 
   function clearOverlayInstant() {
     const canvas = canvasRef.current;
@@ -274,7 +365,7 @@ const hasCompletedRef = useRef(false);
 // }
 
   return (
-  <div className="relative flex items-center justify-center p-4 min-h-screen overflow-hidden">
+  <div className="relative flex flex-col items-center justify-center p-4 min-h-screen overflow-hidden">
       <video
     autoPlay
     loop
@@ -300,7 +391,7 @@ const hasCompletedRef = useRef(false);
         <div className="flex justify-center mb-4 sm:mb-5">
           {scratchTicketCount !== undefined && (
             <div className="bg-yellow-400 w-fit text-black px-3 py-2 rounded-sm text-sm font-bold shadow-md z-20">
-              Available Ticket{scratchTicketCount !== 1 ? "s" : ""}: {scratchTicketCount} 
+              Available Scratche{scratchTicketCount !== 1 ? "s" : ""}: {scratchTicketCount} 
             </div>
           )}
         </div>
@@ -365,9 +456,39 @@ const hasCompletedRef = useRef(false);
             onTouchEnd={() => drawingRef.current = false}
           />
         </div>
-
-        
       </div>
+        <div className="w-full max-w-2xl mx-auto h-72  z-10 bg-black/70 rounded-t-xl mt-10 py-6 overflow-y-scroll px-4 sm:px-6 text-white border-t border-yellow-400">
+          <h3 className="text-center text-xl font-bold mb-4 text-yellow-300">
+            Scratch Ticket Progress
+          </h3>
+      <div className="z-10 overflow-x-auto">
+<table className="w-full text-sm border-separate border-spacing-y-2">
+  <thead>
+                <tr className="text-yellow-300 font-semibold text-left">
+                  <th className="px-3 py-2">#</th>
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">Prize</th>
+                </tr>
+              </thead>
+  <tbody>
+  {scratchHistory.map((item, i) => (
+    <tr key={i} className="bg-gray-800/60 hover:bg-gray-700/80 transition rounded-lg">
+      <td className="px-3 py-2 text-yellow-300 font-semibold">Scratch {i + 1}</td>
+      <td className="px-3 py-2 text-gray-200">{item.status}</td>
+      <td className="px-3 py-2 text-green-400 font-bold">
+        {item.prize.type === "cash"
+          ? `$${item.prize.value}`
+          : item.prize.type === "points"
+          ? `${item.prize.value} pts`
+          : item.prize.value}
+      </td>
+    </tr>
+  ))}
+</tbody>
+
+</table> 
+      </div>
+        </div>
     </div>
   );
 }

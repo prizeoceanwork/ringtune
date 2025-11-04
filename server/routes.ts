@@ -1136,7 +1136,8 @@ app.get("/api/scratch-order/:orderId", isAuthenticated, async (req: any, res) =>
     }
 
     const user = await storage.getUser(userId);
-
+    const used = await storage.getScratchCardsUsed(orderId);
+    const remaining =  order.quantity - used;
     res.json({
       order: {
         id: order.id,
@@ -1144,6 +1145,8 @@ app.get("/api/scratch-order/:orderId", isAuthenticated, async (req: any, res) =>
         quantity: order.quantity,
         totalAmount: order.totalAmount,
         status: order.status,
+        remainingPlays: remaining,
+        used : used
       },
       user: {
         balance: user?.balance || "0",

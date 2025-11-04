@@ -42,9 +42,9 @@ export default function CompetitionCard({ competition, authenticated = false }: 
           data-testid={`img-competition-${competition.id}`}
         />
 
-        <div className="p-2 sm:p-6 mb-8 sm:mb-0 space-y-4">
+        <div className="p-2 sm:p-6 mb-5 sm:mb-0 space-y-4">
           <h3 
-            className="text-sm sm:text-lg font-bold text-foreground line-clamp-2" 
+            className="text-sm sm:text-lg font-bold text-foreground " 
             data-testid={`text-title-${competition.id}`}
           >
             {competition.title}
@@ -52,7 +52,7 @@ export default function CompetitionCard({ competition, authenticated = false }: 
 
           {/* 🟢 Show mini description only for spin/scratch */}
           {shortDescription && (
-            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3">
+            <p className="text-xs sm:text-sm text-muted-foreground ">
               {shortDescription}
             </p>
           )}

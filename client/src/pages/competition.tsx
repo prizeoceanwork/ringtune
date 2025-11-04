@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import CountdownTimer from "./countdownTimer";
+import { Minus, Plus } from "lucide-react";
 
 export default function CompetitionPage() {
   const rangeRef = useRef<HTMLDivElement | null>(null);
@@ -425,15 +426,11 @@ const purchaseTicketMutation = useMutation({
                       </p>
                     </div>
 
-                    {availableTickets.length > 0 ? (
+                    {availableTickets.length > 0 && competition.type == 'instant' ?  (
                   <div className="space-y-4">
                     <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-4 text-center">
                       <p className="text-green-400 font-medium">
-                        ✅ You have {availableTickets.length}  {competition.type === "spin"
-                ? "Spins"
-                : competition.type === "scratch"
-                ? "Scratches"
-                : "Tickets"}{" "}
+                        ✅ You have {availableTickets.length} Tickets{" "}
             
                        
                       </p>
@@ -592,7 +589,32 @@ const purchaseTicketMutation = useMutation({
         Total: £{(parseFloat(competition.ticketPrice) * quantity).toFixed(2)}
       </div>
     </div>
+      <div className="flex justify-center mb-3 gap-5">
+       <button
+        onClick={() => setQuantity((prev) => Math.min(prev + 1, 1000))}
+        disabled={quantity >= 1000}
+        className={`px-4 py-2 rounded-md font-semibold transition ${
+          quantity >= 1000
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-primary text-white hover:opacity-90"
+        }`}
+      >
+         <Plus />
+      </button>
 
+      <button
+        onClick={() => setQuantity((prev) => Math.max(prev - 1, 1))}
+        disabled={quantity <= 1}
+        className={`px-4 py-2 rounded-md font-semibold transition ${
+          quantity <= 1
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-red-500 text-white hover:opacity-90"
+        }`}
+      >
+        <Minus />
+      </button>
+
+      </div>
     {/* Dynamic Buy Button */}
     <div className="w-full flex justify-center">
       <button
