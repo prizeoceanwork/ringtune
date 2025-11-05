@@ -35,10 +35,13 @@ import BeAware from "./pages/beAware";
 import SpinBilling from "./pages/spinBilling";
 import ScratchBilling from "./pages/scratchBilling";
 import ScratchGamePage from "./pages/scratchGamePage";
+import SpinGame from "./pages/spinGamePage";
+import SpinGamePage from "./pages/spinGamePage";
+
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
-
+ 
   return (
     <Switch>
       {/* Public routes - always available */}
@@ -48,6 +51,8 @@ function Router() {
       <Route path="/play-responsible" component={PlayResponsibly} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/be-aware" component={BeAware} />
+      {/* <Route path="/mood" component=s */}
+        
 
       {/* Conditional routes based on auth status */}
       {isLoading || !isAuthenticated ? (
@@ -56,6 +61,8 @@ function Router() {
           <Route path="/competition/:id" component={Competition} />
           <Route path="/play/:id" component={PlayGame} />
           <Route path="/winners" component={PastWinners} />
+        
+
         </>
       ) : (
         <>
@@ -81,6 +88,7 @@ function Router() {
           <Route path="/spin-billing/:orderId" component={SpinBilling} />
           <Route path="/scratch-billing/:orderId" component={ScratchBilling} />
           <Route path="/scratch/:competitionId/:orderId" component={ScratchGamePage} />
+          <Route path="/spin/:competitionId/:orderId" component={SpinGamePage} />
 
 
         </>

@@ -18,11 +18,13 @@ import {
   tickets,
   orders,
   transactions,
+  users,
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
 import {stripe} from "./stripe";
 import { cashflows } from "./cashflows";
+import { and, desc, eq, sql } from "drizzle-orm";
 // Initialize Stripe only if keys are available
 // let stripe: Stripe | null = null;
 // if (process.env.STRIPE_SECRET_KEY) {
@@ -30,6 +32,19 @@ import { cashflows } from "./cashflows";
 //     apiVersion: "2025-08-27.basil",
 //   });
 // }
+
+// Admin middleware
+export const isAdmin = (req: any, res: any, next: any) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  if (!req.user.isAdmin) {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  
+  next();
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -698,6 +713,7 @@ app.post("/api/process-spin-payment", isAuthenticated, async (req: any, res) => 
 
       return res.json({
         success: true,
+        competitionId: order.competitionId, 
         message: "Payment completed successfully",
         orderId: order.id,
         spins: spins,
@@ -716,99 +732,105 @@ app.post("/api/process-spin-payment", isAuthenticated, async (req: any, res) => 
 app.post("/api/play-spin-wheelll", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
-    const { orderId } = req.body;
+    const { orderId, winnerPrize, prize } = req.body; // Accept both winnerPrize and prize
 
-    // Verify the user has a completed order for spins
-    const order = await storage.getOrder(orderId);
-    if (!order || order.userId !== userId || order.status !== "completed") {
-      return res.status(400).json({ 
-        success: false, 
-        message: "No valid spin purchase found" 
+    // Use either winnerPrize or prize
+    const actualPrize = winnerPrize || prize;
+
+    if (!actualPrize) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid prize data — missing prize information",
       });
     }
 
-    // Check if user has spins remaining from this order
+    // Verify valid completed order
+    const order = await storage.getOrder(orderId);
+    if (!order || order.userId !== userId || order.status !== "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "No valid spin purchase found",
+      });
+    }
+
+    // Check spins remaining
     const spinsUsed = await storage.getSpinsUsed(orderId);
     const spinsRemaining = order.quantity - spinsUsed;
 
     if (spinsRemaining <= 0) {
       return res.status(400).json({
         success: false,
-        message: "No spins remaining in this purchase"
+        message: "No spins remaining in this purchase",
       });
     }
 
-    // Mark one spin as used
+    // Record usage
     await storage.recordSpinUsage(orderId, userId);
 
-    // Your existing prize logic here
-    const winnerPrize = req.body.winnerPrize; // From your existing code
+    // Get user
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    // ---- Handle prize logic ----
-    if (typeof winnerPrize.amount === "number" && winnerPrize.amount > 0) {
-      // 💰 Cash prize
-      const prizeAmount = winnerPrize.amount;
-      const user = await storage.getUser(userId);
-      const currentBalance = parseFloat(user?.balance || "0");
-      const finalBalance = currentBalance + prizeAmount;
+    // --- PRIZE HANDLING ---
+    // Handle different prize structures
+    const prizeValue = actualPrize.value || actualPrize.amount;
+    const prizeType = actualPrize.type || (typeof prizeValue === 'number' ? 'cash' : 'points');
 
+    if (prizeType === "cash" && prizeValue) {
+      const amount = parseFloat(prizeValue);
+      const finalBalance = parseFloat(user.balance || "0") + amount;
       await storage.updateUserBalance(userId, finalBalance.toFixed(2));
 
       await storage.createTransaction({
         userId,
         type: "prize",
-        amount: prizeAmount.toFixed(2),
-        description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - £${prizeAmount}`,
+        amount: amount.toFixed(2),
+        description: `Spin Wheel Prize - £${amount}`,
       });
 
       await storage.createWinner({
         userId,
         competitionId: null,
-        prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
-        prizeValue: `£${prizeAmount}`,
-        imageUrl: winnerPrize.image || null,
+        prizeDescription: "Spin Wheel Prize",
+        prizeValue: `£${amount}`,
+        imageUrl: actualPrize.image || null,
       });
-    } else if (
-      typeof winnerPrize.amount === "string" &&
-      winnerPrize.amount.includes("Ringtones")
-    ) {
-      // 🎵 Ringtone points prize
-      const user = await storage.getUser(userId);
-      const match = winnerPrize.amount.match(/(\d+)\s*Ringtones/);
-      if (match) {
-        const points = parseInt(match[1]);
-        const newPoints = (user?.ringtonePoints || 0) + points;
 
-        await storage.updateUserRingtonePoints(userId, newPoints);
+    } else if (prizeType === "points" && prizeValue) {
+      const points = parseInt(prizeValue);
+      const newPoints = (user.ringtonePoints || 0) + points;
+      await storage.updateUserRingtonePoints(userId, newPoints);
 
-        await storage.createTransaction({
-          userId,
-          type: "prize",
-          amount: points.toString(),
-          description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - ${points} Ringtones`,
-        });
+      await storage.createTransaction({
+        userId,
+        type: "prize",
+        amount: points.toString(),
+        description: `Spin Wheel Prize - ${points} Ringtones`,
+      });
 
-        await storage.createWinner({
-          userId,
-          competitionId: null,
-          prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
-          prizeValue: `${points} Ringtones`,
-          imageUrl: winnerPrize.image || null,
-        });
-      }
+      await storage.createWinner({
+        userId,
+        competitionId: null,
+        prizeDescription: "Spin Wheel Prize",
+        prizeValue: `${points} Ringtones`,
+        imageUrl: actualPrize.image || null,
+      });
     }
 
     res.json({
       success: true,
-      prize: winnerPrize,
+      prize: actualPrize,
       spinsRemaining: spinsRemaining - 1,
-      orderId: order.id
+      orderId: order.id,
     });
   } catch (error) {
     console.error("Error playing spin wheel:", error);
     res.status(500).json({ message: "Failed to play spin wheel" });
   }
 });
+
 
 // Get spin order details for billing page
 app.get("/api/spin-order/:orderId", isAuthenticated, async (req: any, res) => {
@@ -822,13 +844,17 @@ app.get("/api/spin-order/:orderId", isAuthenticated, async (req: any, res) => {
     }
 
     const user = await storage.getUser(userId);
-
+    const used = await storage.getSpinsUsed(orderId);
+    const remaining = order.quantity - used;
     res.json({
       order: {
         id: order.id,
+         competitionId: order.competitionId,
         quantity: order.quantity,
         totalAmount: order.totalAmount,
-        status: order.status
+        status: order.status,
+         remainingPlays: remaining,
+        used : used
       },
       user: {
         balance: user?.balance || "0",
@@ -841,6 +867,8 @@ app.get("/api/spin-order/:orderId", isAuthenticated, async (req: any, res) => {
     res.status(500).json({ message: "Failed to fetch spin order" });
   }
 });
+
+// Spin History
 
 app.post("/api/create-scratch-order", isAuthenticated, async (req: any, res) => {
   try {
@@ -1210,175 +1238,175 @@ app.post("/api/payment-success/competition", isAuthenticated, async (req: any, r
 });
 
   // Game routes
-app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
-  try {
-    const userId = req.user.id;
-    const { winnerPrize } = req.body;
-    const SPIN_COST = 2; // £2 per spin
+// app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { winnerPrize } = req.body;
+//     const SPIN_COST = 2; // £2 per spin
 
-    // Fetch user and ensure balance is enough
-    const user = await storage.getUser(userId);
-    const currentBalance = parseFloat(user?.balance || "0");
+//     // Fetch user and ensure balance is enough
+//     const user = await storage.getUser(userId);
+//     const currentBalance = parseFloat(user?.balance || "0");
 
-    if (currentBalance < SPIN_COST) {
-      return res.status(400).json({
-        success: false,
-        message: "Insufficient balance. Please top up your wallet.",
-      });
-    }
+//     if (currentBalance < SPIN_COST) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Insufficient balance. Please top up your wallet.",
+//       });
+//     }
 
-    // Deduct the spin cost
-    const newBalance = currentBalance - SPIN_COST;
-    await storage.updateUserBalance(userId, newBalance.toFixed(2));
+//     // Deduct the spin cost
+//     const newBalance = currentBalance - SPIN_COST;
+//     await storage.updateUserBalance(userId, newBalance.toFixed(2));
 
-    await storage.createTransaction({
-      userId,
-      type: "withdrawal",
-      amount: SPIN_COST.toFixed(2),
-      description: "Spin Wheel - Spin cost",
-    });
+//     await storage.createTransaction({
+//       userId,
+//       type: "withdrawal",
+//       amount: SPIN_COST.toFixed(2),
+//       description: "Spin Wheel - Spin cost",
+//     });
 
-    // ---- Handle prize logic ----
-    if (typeof winnerPrize.amount === "number" && winnerPrize.amount > 0) {
-      // 💰 Cash prize
-      const prizeAmount = winnerPrize.amount;
-      const finalBalance = newBalance + prizeAmount;
+//     // ---- Handle prize logic ----
+//     if (typeof winnerPrize.amount === "number" && winnerPrize.amount > 0) {
+//       // 💰 Cash prize
+//       const prizeAmount = winnerPrize.amount;
+//       const finalBalance = newBalance + prizeAmount;
 
-      await storage.updateUserBalance(userId, finalBalance.toFixed(2));
+//       await storage.updateUserBalance(userId, finalBalance.toFixed(2));
 
-      await storage.createTransaction({
-        userId,
-        type: "prize",
-        amount: prizeAmount.toFixed(2),
-        description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - £${prizeAmount}`,
-      });
+//       await storage.createTransaction({
+//         userId,
+//         type: "prize",
+//         amount: prizeAmount.toFixed(2),
+//         description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - £${prizeAmount}`,
+//       });
 
-      await storage.createWinner({
-        userId,
-        competitionId: null,
-        prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
-        prizeValue: `£${prizeAmount}`,
-        imageUrl: winnerPrize.image || null,
-      });
-    } else if (
-      typeof winnerPrize.amount === "string" &&
-      winnerPrize.amount.includes("Ringtones")
-    ) {
-      // 🎵 Ringtone points prize
-      const match = winnerPrize.amount.match(/(\d+)\s*Ringtones/);
-      if (match) {
-        const points = parseInt(match[1]);
-        const newPoints = (user?.ringtonePoints || 0) + points;
+//       await storage.createWinner({
+//         userId,
+//         competitionId: null,
+//         prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
+//         prizeValue: `£${prizeAmount}`,
+//         imageUrl: winnerPrize.image || null,
+//       });
+//     } else if (
+//       typeof winnerPrize.amount === "string" &&
+//       winnerPrize.amount.includes("Ringtones")
+//     ) {
+//       // 🎵 Ringtone points prize
+//       const match = winnerPrize.amount.match(/(\d+)\s*Ringtones/);
+//       if (match) {
+//         const points = parseInt(match[1]);
+//         const newPoints = (user?.ringtonePoints || 0) + points;
 
-        await storage.updateUserRingtonePoints(userId, newPoints);
+//         await storage.updateUserRingtonePoints(userId, newPoints);
 
-        await storage.createTransaction({
-          userId,
-          type: "prize",
-          amount: points.toString(),
-          description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - ${points} Ringtones`,
-        });
+//         await storage.createTransaction({
+//           userId,
+//           type: "prize",
+//           amount: points.toString(),
+//           description: `Spin wheel prize: ${winnerPrize.brand || "Prize"} - ${points} Ringtones`,
+//         });
 
-        await storage.createWinner({
-          userId,
-          competitionId: null,
-          prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
-          prizeValue: `${points} Ringtones`,
-          imageUrl: winnerPrize.image || null,
-        });
-      }
-    }
+//         await storage.createWinner({
+//           userId,
+//           competitionId: null,
+//           prizeDescription: winnerPrize.brand || "Spin Wheel Prize",
+//           prizeValue: `${points} Ringtones`,
+//           imageUrl: winnerPrize.image || null,
+//         });
+//       }
+//     }
 
-    res.json({
-      success: true,
-      prize: winnerPrize,
-      balance: newBalance.toFixed(2),
-    });
-  } catch (error) {
-    console.error("Error playing spin wheel:", error);
-    res.status(500).json({ message: "Failed to play spin wheel" });
-  }
-});
+//     res.json({
+//       success: true,
+//       prize: winnerPrize,
+//       balance: newBalance.toFixed(2),
+//     });
+//   } catch (error) {
+//     console.error("Error playing spin wheel:", error);
+//     res.status(500).json({ message: "Failed to play spin wheel" });
+//   }
+// });
 
-app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
-  try {
-    const userId = req.user.id;
-    const { winnerPrize } = req.body;
-    const SCRATCH_COST = 2; // £2 per scratch
+// app.post("/api/play-scratch-card", isAuthenticated, async (req: any, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { winnerPrize } = req.body;
+//     const SCRATCH_COST = 2; // £2 per scratch
 
-    const user = await storage.getUser(userId);
-    const currentBalance = parseFloat(user?.balance || "0");
+//     const user = await storage.getUser(userId);
+//     const currentBalance = parseFloat(user?.balance || "0");
 
-    if (currentBalance < SCRATCH_COST) {
-      return res.status(400).json({
-        success: false,
-        message: "Insufficient balance. Please top up your wallet.",
-      });
-    }
+//     if (currentBalance < SCRATCH_COST) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Insufficient balance. Please top up your wallet.",
+//       });
+//     }
 
-    // 💳 Deduct scratch cost
-    const newBalance = currentBalance - SCRATCH_COST;
-    await storage.updateUserBalance(userId, newBalance.toFixed(2));
-    await storage.createTransaction({
-      userId,
-      type: "withdrawal",
-      amount: SCRATCH_COST.toFixed(2),
-      description: "Scratch Card - Play cost",
-    });
+//     // 💳 Deduct scratch cost
+//     const newBalance = currentBalance - SCRATCH_COST;
+//     await storage.updateUserBalance(userId, newBalance.toFixed(2));
+//     await storage.createTransaction({
+//       userId,
+//       type: "withdrawal",
+//       amount: SCRATCH_COST.toFixed(2),
+//       description: "Scratch Card - Play cost",
+//     });
 
-    // 🎁 Handle prize logic
-    if (winnerPrize.type === "cash" && winnerPrize.value) {
-      const amount = parseFloat(winnerPrize.value);
-      if (amount > 0) {
-        const finalBalance = newBalance + amount;
-        await storage.updateUserBalance(userId, finalBalance.toFixed(2));
+//     // 🎁 Handle prize logic
+//     if (winnerPrize.type === "cash" && winnerPrize.value) {
+//       const amount = parseFloat(winnerPrize.value);
+//       if (amount > 0) {
+//         const finalBalance = newBalance + amount;
+//         await storage.updateUserBalance(userId, finalBalance.toFixed(2));
 
-        await storage.createTransaction({
-          userId,
-          type: "prize",
-          amount: amount.toFixed(2),
-          description: `Scratch card prize: £${amount}`,
-        });
+//         await storage.createTransaction({
+//           userId,
+//           type: "prize",
+//           amount: amount.toFixed(2),
+//           description: `Scratch card prize: £${amount}`,
+//         });
 
-        await storage.createWinner({
-          userId,
-          competitionId : null,
-          prizeDescription: "Scratch Card Prize",
-          prizeValue: `£${amount}`,
-          imageUrl: winnerPrize.image || null,
-        });
-      }
-    } else if (winnerPrize.type === "points" && winnerPrize.value) {
-      const points = parseInt(winnerPrize.value);
-      const newPoints = (user?.ringtonePoints || 0) + points;
+//         await storage.createWinner({
+//           userId,
+//           competitionId : null,
+//           prizeDescription: "Scratch Card Prize",
+//           prizeValue: `£${amount}`,
+//           imageUrl: winnerPrize.image || null,
+//         });
+//       }
+//     } else if (winnerPrize.type === "points" && winnerPrize.value) {
+//       const points = parseInt(winnerPrize.value);
+//       const newPoints = (user?.ringtonePoints || 0) + points;
 
-      await storage.updateUserRingtonePoints(userId, newPoints);
-      await storage.createTransaction({
-        userId,
-        type: "prize",
-        amount: points.toString(),
-        description: `Scratch card prize: ${points} Ringtones`,
-      });
+//       await storage.updateUserRingtonePoints(userId, newPoints);
+//       await storage.createTransaction({
+//         userId,
+//         type: "prize",
+//         amount: points.toString(),
+//         description: `Scratch card prize: ${points} Ringtones`,
+//       });
 
-      await storage.createWinner({
-        userId,
-        competitionId : null, 
-        prizeDescription: "Scratch Card Prize",
-        prizeValue: `${points} Ringtones`,
-        imageUrl: winnerPrize.image || null,
-      });
-    }
+//       await storage.createWinner({
+//         userId,
+//         competitionId : null, 
+//         prizeDescription: "Scratch Card Prize",
+//         prizeValue: `${points} Ringtones`,
+//         imageUrl: winnerPrize.image || null,
+//       });
+//     }
 
-    res.json({
-      success: true,
-      prize: winnerPrize,
-      balance: newBalance.toFixed(2),
-    });
-  } catch (error) {
-    console.error("Error playing scratch card:", error);
-    res.status(500).json({ message: "Failed to play scratch card" });
-  }
-});
+//     res.json({
+//       success: true,
+//       prize: winnerPrize,
+//       balance: newBalance.toFixed(2),
+//     });
+//   } catch (error) {
+//     console.error("Error playing scratch card:", error);
+//     res.status(500).json({ message: "Failed to play scratch card" });
+//   }
+// });
 
   // Convert ringtone points to wallet balance
 app.post("/api/convert-ringtone-points", isAuthenticated, async (req: any, res) => {
@@ -1642,6 +1670,333 @@ app.delete("/api/delete" , async (req , res) => {
 app.delete("/api/test-delete", (req, res) => {
 
   res.json({ message: "Delete route works!" });
+});
+
+
+// Admin routes would go here (protected by isAdmin middleware)
+// Admin Routes
+
+// Get admin dashboard stats
+app.get("/api/admin/dashboard", isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    // Get total users
+    const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
+    
+    // Get total competitions
+    const totalCompetitions = await db.select({ count: sql<number>`count(*)` }).from(competitions);
+    
+    // Get total revenue
+    const revenueResult = await db.select({ total: sql<number>`coalesce(sum(${orders.totalAmount}), 0)` })
+      .from(orders)
+      .where(eq(orders.status, "completed"));
+    
+    // Get recent orders
+    const recentOrders = await db
+      .select()
+      .from(orders)
+      .leftJoin(users, eq(orders.userId, users.id))
+      .leftJoin(competitions, eq(orders.competitionId, competitions.id))
+      .orderBy(desc(orders.createdAt))
+      .limit(10);
+
+    res.json({
+      stats: {
+        totalUsers: totalUsers[0]?.count || 0,
+        totalCompetitions: totalCompetitions[0]?.count || 0,
+        totalRevenue: revenueResult[0]?.total || 0,
+      },
+      recentOrders: recentOrders.map(order => ({
+        id: order.orders.id,
+        user: {
+          firstName: order.users?.firstName,
+          lastName: order.users?.lastName,
+          email: order.users?.email,
+        },
+        competition: order.competitions?.title,
+        amount: order.orders.totalAmount,
+        status: order.orders.status,
+        createdAt: order.orders.createdAt,
+      }))
+    });
+  } catch (error) {
+    console.error("Error fetching admin dashboard:", error);
+    res.status(500).json({ message: "Failed to fetch dashboard data" });
+  }
+});
+
+// Manage competitions
+app.get("/api/admin/competitions", isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const allCompetitions = await db.select()
+      .from(competitions)
+      .orderBy(desc(competitions.createdAt));
+    
+    res.json(allCompetitions);
+  } catch (error) {
+    console.error("Error fetching competitions:", error);
+    res.status(500).json({ message: "Failed to fetch competitions" });
+  }
+});
+
+// Create competition
+app.post("/api/admin/competitions", isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const competitionData = req.body;
+    
+    const competition = await storage.createCompetition({
+      ...competitionData,
+      isActive: true,
+    });
+    
+    res.status(201).json(competition);
+  } catch (error) {
+    console.error("Error creating competition:", error);
+    res.status(500).json({ message: "Failed to create competition" });
+  }
+});
+
+// Update competition
+app.put("/api/admin/competitions/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    const [updatedCompetition] = await db
+      .update(competitions)
+      .set({
+        ...updateData,
+        updatedAt: new Date(),
+      })
+      .where(eq(competitions.id, id))
+      .returning();
+    
+    if (!updatedCompetition) {
+      return res.status(404).json({ message: "Competition not found" });
+    }
+    
+    res.json(updatedCompetition);
+  } catch (error) {
+    console.error("Error updating competition:", error);
+    res.status(500).json({ message: "Failed to update competition" });
+  }
+});
+
+// Delete competition
+app.delete("/api/admin/competitions/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const { id } = req.params;
+    
+    // First delete related records
+    await db.delete(tickets).where(eq(tickets.competitionId, id));
+    await db.delete(orders).where(eq(orders.competitionId, id));
+    
+    // Then delete competition
+    const [deletedCompetition] = await db
+      .delete(competitions)
+      .where(eq(competitions.id, id))
+      .returning();
+    
+    if (!deletedCompetition) {
+      return res.status(404).json({ message: "Competition not found" });
+    }
+    
+    res.json({ message: "Competition deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting competition:", error);
+    res.status(500).json({ message: "Failed to delete competition" });
+  }
+});
+
+//  Delete user
+app.delete("/api/admin/users/:id", isAuthenticated , isAdmin , async (req: any , res) =>{
+  try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      if(id === userId){
+        return res.status(400).json({ message : "admin cannot delete own account"})
+      }
+
+      const user = await storage.getUser(id);
+      if(!user){
+        return res.status(404).json({ message : "user not found"})
+      }
+
+      const userOrders = await db.select().from(orders).where(eq(orders.userId , id)).limit(1);
+      const userTickets =  await db.select().from(tickets).where(eq(tickets.userId , id)).limit(1);
+      
+      if(userOrders.length > 0 || userTickets.length > 0){
+        return res.status(400).json({ message : "cannot delete user with existing orders or tickets"})
+      }
+
+      await db.delete(transactions).where(eq(transactions.userId, id));
+
+      await db.delete(users).where(eq(users.id , id))
+      res.status(200).json({ message : "user deleted successfully"})
+  } catch (error) {
+      console.error("Error deleting user:" , error);
+      res.status(500).json({ message : "failed to delete user"})
+  }
+});
+
+// Deactivate user
+app.delete("/api/admin/users/deactivate/:id" ,isAuthenticated, isAdmin, async (req:any , res)=>{
+  try {
+    const { id} = req.params;
+    const userId = req.user.id;
+
+    if(id === userId){
+      return res.status(400).json({ message : "admin cannnot deactivate own account"})
+    }
+
+    const user = await storage.getUser(id);
+
+    if(!user){
+      return res.status(404).json({ message : "user not found"})
+    }
+
+     await storage.updateUser(id, { 
+      isActive: false, 
+      email: `deleted_${Date.now()}_${user.email}` // Prevent email reuse
+    });
+
+    res.status(200).json({ message: "User deactivated successfully" });
+
+  } catch (error) {
+     console.error("Error deactivating user:", error);
+    res.status(500).json({ message: "Failed to deactivate user" });
+  }
+})
+
+// Manage users
+app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const allUsers = await db.select()
+      .from(users)
+      .orderBy(desc(users.createdAt));
+    
+    res.json(allUsers.map(user => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      balance: user.balance,
+      ringtonePoints: user.ringtonePoints,
+      isAdmin: user.isAdmin,
+      createdAt: user.createdAt,
+    })));
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Failed to fetch users" });
+  }
+});
+
+// Update user
+app.put("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        ...updateData,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    res.json({
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      balance: updatedUser.balance,
+      ringtonePoints: updatedUser.ringtonePoints,
+      isAdmin: updatedUser.isAdmin,
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ message: "Failed to update user" });
+  }
+});
+
+// Get all orders
+app.get("/api/admin/orders", isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const allOrders = await db
+      .select()
+      .from(orders)
+      .leftJoin(users, eq(orders.userId, users.id))
+      .leftJoin(competitions, eq(orders.competitionId, competitions.id))
+      .orderBy(desc(orders.createdAt));
+    
+    res.json(allOrders.map(order => ({
+      id: order.orders.id,
+      user: {
+        id: order.users?.id,
+        firstName: order.users?.firstName,
+        lastName: order.users?.lastName,
+        email: order.users?.email,
+      },
+      competition: order.competitions?.title,
+      quantity: order.orders.quantity,
+      totalAmount: order.orders.totalAmount,
+      paymentMethod: order.orders.paymentMethod,
+      status: order.orders.status,
+      createdAt: order.orders.createdAt,
+    })));
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+});
+
+// Get system analytics
+app.get("/api/admin/analytics", isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    // Daily revenue for last 7 days
+    const revenueByDay = await db
+      .select({
+        date: sql<string>`date(${orders.createdAt})`,
+        revenue: sql<number>`coalesce(sum(${orders.totalAmount}), 0)`,
+      })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.status, "completed"),
+          sql`${orders.createdAt} >= now() - interval '7 days'`
+        )
+      )
+      .groupBy(sql`date(${orders.createdAt})`)
+      .orderBy(sql`date(${orders.createdAt})`);
+
+    // Competition performance
+    const competitionPerformance = await db
+      .select({
+        competitionId: competitions.id,
+        title: competitions.title,
+        ticketPrice: competitions.ticketPrice,
+        soldTickets: competitions.soldTickets,
+        maxTickets: competitions.maxTickets,
+        revenue: sql<number>`coalesce(sum(${orders.totalAmount}), 0)`,
+      })
+      .from(competitions)
+      .leftJoin(orders, eq(competitions.id, orders.competitionId))
+      .groupBy(competitions.id, competitions.title, competitions.ticketPrice, competitions.soldTickets, competitions.maxTickets)
+      .orderBy(sql`coalesce(sum(${orders.totalAmount}), 0) DESC`);
+
+    res.json({
+      revenueByDay,
+      competitionPerformance,
+    });
+  } catch (error) {
+    console.error("Error fetching analytics:", error);
+    res.status(500).json({ message: "Failed to fetch analytics" });
+  }
 });
 
 const httpServer = createServer(app);

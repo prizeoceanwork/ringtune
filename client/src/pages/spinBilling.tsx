@@ -56,9 +56,19 @@ const SpinBilling = () => {
         });
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         queryClient.invalidateQueries({ queryKey: ["/api/spin-order", orderId] });
-        setTimeout(() => {
-          setLocation(`/spin/${order?.competitionId}?order=${orderId}`);
-        }, 2000);
+        const competitionId =
+      data.competitionId || order?.competitionId; // ✅ fallback to either
+    console.log("🏆 Redirecting to spin game with competitionId:", competitionId);
+
+       if (competitionId) {
+      setTimeout(() => {
+       setLocation(`/spin/${data.competitionId  ||order?.competitionId || order?.order?.competitionId}/${orderId}`);
+
+
+      }, 1500);
+    } else {
+      console.error("⚠️ Missing competitionId in success response or order");
+    }
       } else {
         toast({
           title: "Payment Failed",

@@ -22,6 +22,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sum, sql } from "drizzle-orm";
+import { hashPassword } from "./customAuth";
 
 export interface IStorage {
   // User operations (custom email/password auth)
@@ -79,6 +80,40 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+
+
+  // In storage.ts - add to DatabaseStorage class
+async initializeAdminUser(): Promise<void> {
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    
+    const existingAdmin = await this.getUserByEmail(adminEmail);
+    
+    if (!existingAdmin) {
+      const hashedPassword = await hashPassword(adminPassword);
+      
+      await this.createUser({
+        email: adminEmail,
+        password: hashedPassword,
+        firstName: "Admin",
+        lastName: "User",
+        isAdmin: true,
+        emailVerified: true,
+      });
+      
+      console.log("✅ Admin user created successfully");
+    } else {
+      // Ensure existing admin has admin privileges
+      if (!existingAdmin.isAdmin) {
+        await this.updateUser(existingAdmin.id, { isAdmin: true });
+        console.log("✅ Existing user promoted to admin");
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error initializing admin user:", error);
+  }
+}
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));

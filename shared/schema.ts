@@ -40,6 +40,8 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false),
   ringtonePoints: integer("ringtone_points").default(0),
   receiveNewsletter: boolean("receive_newsletter").default(false),
+  isAdmin: boolean("is_admin").default(false),
+  isActive: boolean("is_active").default(true), 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

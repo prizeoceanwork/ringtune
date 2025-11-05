@@ -29,6 +29,24 @@ interface SpinWheelProps {
   ticketCount?: number;
 }
 
+  // Add these functions for localStorage management
+const loadSpinHistory = (): { status: string; prize: { brand: string; amount: any } }[] => {
+  try {
+    const saved = localStorage.getItem('spinWheelHistory');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveSpinHistory = (history: { status: string; prize: { brand: string; amount: any } }[]) => {
+  try {
+    localStorage.setItem('spinWheelHistory', JSON.stringify(history));
+  } catch (error) {
+    console.error('Failed to save spin history:', error);
+  }
+};
+
 const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIsSpinning, ticketCount }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const centerVideoRef = useRef<HTMLVideoElement>(null);
@@ -37,6 +55,11 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
   const [loadedImages, setLoadedImages] = useState<{
     [key: string]: HTMLImageElement;
   }>({});
+
+  // Inside your SpinWheel component, add the state:
+const [spinHistory, setSpinHistory] = useState<
+  { status: string; prize: { brand: string; amount: any } }[]
+>([]);
 
   // Define prizes with amounts for each segment
   const segments = [
@@ -69,7 +92,50 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
     
   ];
 
-  const [rotation, setRotation] = useState((2 * Math.PI) / segments.length / 4.5);
+  const [rotation, setRotation] = useState((2 * Math.PI) / segments.length / 1.3);
+
+// Initialize spin history when ticketCount changes
+useEffect(() => {
+  if (!ticketCount) return;
+
+  const savedHistory = loadSpinHistory();
+  
+  if (savedHistory.length === ticketCount) {
+    setSpinHistory(savedHistory);
+  } else if (savedHistory.length > 0) {
+    const adjustedHistory = adjustSpinHistoryToCount(savedHistory, ticketCount);
+    setSpinHistory(adjustedHistory);
+  } else {
+    setSpinHistory(
+      Array.from({ length: ticketCount }, () => ({
+        status: "NOT SPUN",
+        prize: { brand: "-", amount: "-" },
+      }))
+    );
+  }
+}, [ticketCount]);
+
+// Helper function to adjust spin history
+const adjustSpinHistoryToCount = (history: any[], targetCount: number) => {
+  if (history.length === targetCount) return history;
+  
+  if (history.length < targetCount) {
+    const newEntries = Array.from({ length: targetCount - history.length }, () => ({
+      status: "NOT SPUN",
+      prize: { brand: "-", amount: "-" },
+    }));
+    return [...history, ...newEntries];
+  } else {
+    return history;
+  }
+};
+
+// Save to localStorage whenever spinHistory changes
+useEffect(() => {
+  if (spinHistory.length > 0) {
+    saveSpinHistory(spinHistory);
+  }
+}, [spinHistory]);
 
   // Load all images
 useEffect(() => {
@@ -174,6 +240,7 @@ useEffect(() => {
       const icon = s.icon;
       let imgSize = radius * 0.12;
       let iconWidth = imgSize * 1;
+      let iconHeight = imgSize * 1;
 
       if (["Aston Martin", "Audi", "Bentley", "Mini Cooper"].includes(s.label)) {
         imgSize = radius * 0.12;
@@ -190,8 +257,13 @@ useEffect(() => {
       if (s.label === "R") {
         imgSize = radius * 0.22;
         iconWidth = imgSize * 1.1;
+         iconHeight = imgSize * 1.1; 
       }
       
+       if ("Ferrari".includes(s.label)) {
+        imgSize = radius * 0.10;
+      iconHeight = imgSize * 1.5;
+      }
       // Handle emoji case
       if (icon === "❌") {
         ctx.textAlign = "center";
@@ -216,9 +288,9 @@ useEffect(() => {
   ctx.imageSmoothingQuality = isSvg ? "high" : "low";
 
   const drawX = Math.round(-iconWidth / 2);
-  const drawY = Math.round(-imgSize / 2);
+  const drawY = Math.round(-iconHeight  / 2);
   const drawWidth = Math.round(iconWidth);
-  const drawHeight = Math.round(imgSize);
+  const drawHeight = Math.round(iconHeight );
 
   ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
   ctx.restore();
@@ -271,48 +343,63 @@ useEffect(() => {
     };
   };
 
-  const spinWheel = () => {
-    if (isSpinning) return;
-    setIsSpinning(true);
-    setWinner(null);
+ const spinWheel = () => {
+  if (isSpinning) return;
+  setIsSpinning(true);
+  setWinner(null);
 
-    const totalRotations = 5;
-    const segAngle = (2 * Math.PI) / segments.length;
-    const randomSegment = Math.floor(Math.random() * segments.length);
-    const finalOffset = randomSegment * segAngle + Math.random() * segAngle * 0.5;
-    const target = rotation + totalRotations * 2 * Math.PI + finalOffset;
+  const totalRotations = 5;
+  const segAngle = (2 * Math.PI) / segments.length;
+  const randomSegment = Math.floor(Math.random() * segments.length);
+  const finalOffset = randomSegment * segAngle + Math.random() * segAngle * 0.5;
+  const target = rotation + totalRotations * 2 * Math.PI + finalOffset;
 
-    const duration = 5000;
-    const start = performance.now();
+  const duration = 5000;
+  const start = performance.now();
 
-    const animate = (time: number) => {
-      const progress = Math.min((time - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const current = rotation + eased * (target - rotation);
-      drawWheel(current);
+  const animate = (time: number) => {
+    const progress = Math.min((time - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = rotation + eased * (target - rotation);
+    drawWheel(current);
 
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        const finalRotation = target % (2 * Math.PI);
-        setRotation(finalRotation);
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      const finalRotation = target % (2 * Math.PI);
+      setRotation(finalRotation);
+      
+      const winnerResult = getWinner(target);
+      setWinner(winnerResult.label);
+      setIsSpinning(false);
+      
+      onSpinComplete(winnerResult.index, winnerResult.label, winnerResult.prize);
+
+      // ✅ Update spin history
+      setSpinHistory((prev) => {
+        const updated = [...prev];
+        const firstUnspunIndex = updated.findIndex((s) => s.status === "NOT SPUN");
         
-        const winnerResult = getWinner(target);
-        setWinner(winnerResult.label);
-        setIsSpinning(false);
+        if (firstUnspunIndex !== -1) {
+          updated[firstUnspunIndex] = {
+            status: "SPUN",
+            prize: winnerResult.prize,
+          };
+        }
         
-        onSpinComplete(winnerResult.index, winnerResult.label, winnerResult.prize);
-      }
-    };
-
-    requestAnimationFrame(animate);
+        return updated;
+      });
+    }
   };
+
+  requestAnimationFrame(animate);
+};
 
   useEffect(() => {
     const resize = () => {
       const canvas = canvasRef.current;
       if (!canvas || !canvas.parentElement) return;
-      const size = Math.min(canvas.parentElement.clientWidth, 600);
+      const size = Math.min(canvas.parentElement.clientWidth, 601);
       canvas.width = size;
       canvas.height = size;
       drawWheel(rotation);
@@ -339,15 +426,21 @@ useEffect(() => {
       </video>
 
       <div className="relative w-full max-w-2xl aspect-square flex items-center justify-center z-10">
+
+        {/* {ticketCount !== undefined && (
+    <div className="absolute -top-14 right-65 bg-yellow-400 text-black px-3 py-2 rounded-sm text-sm font-bold shadow-md z-20">
+       Available Spin{ticketCount !== 1 ? "s" : ""} :{ticketCount} 
+    </div>
+  )} */}
        <img
   src="https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/wheel_basnqc.png"
   alt="Wheel Ring"
-  className="absolute -top-5 md:-top-0 inset-0  w-[108%] h-[108%] md:w-full md:h-full object-cover z-20 pointer-events-none"
+  className="absolute -top-4 md:-top-0 inset-0  w-[108%] h-[108%] md:w-full md:h-full object-cover z-20 pointer-events-none"
 />
         
         <canvas
           ref={canvasRef}
-          className="w-full h-full rounded-full"
+          className="w-[100%] h-[100%] sm:w-[99%] sm:h-[99%] md:w-[89%] md:h-[89%] rounded-full"
         />
 
         {/* Center video - FIXED FOR iOS */}
@@ -396,44 +489,41 @@ useEffect(() => {
         }
       `}</style>
 
-      <div className="h-full sm:h-[300px] w-full sm:w-[400px] bg-black pb-5 mb-0 sm:mb-6 z-20">
-        <div className="flex flex-col ml-10 items-center gap-3 mt-8 w-full max-w-xs z-20 relative">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="w-full text-center">
-              <div className="flex justify-between text-yellow-300 font-semibold text-lg w-3/4 mx-auto">
-                <span>Spin {i + 1}</span>
-                <span className="text-gray-300 text-sm">NOT SPUN</span>
-              </div>
-              <div className="h-[2px] bg-yellow-400 mt-2 mb-1 w-3/4 mx-auto"></div>
-            </div>
-          ))}
-        </div>
-
-        {/* Buttons */}
-        <div className="flex justify-center gap-6 mt-6 relative z-20">
-          <button
-            onClick={spinWheel}
-            disabled={isSpinning}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-6 py-3 text-sm rounded-sm shadow-sm disabled:opacity-50"
-          >
-            SPIN
-          </button>
-          <button
-            onClick={() => alert('Reveal pressed')}
-            className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-6 py-3 text-xs rounded-sm shadow-sm"
-          >
-            REVEAL ALL
-          </button>
-        </div>
-      </div>
-      <style>{`
-  canvas {
-    image-rendering: -moz-crisp-edges;
-    image-rendering: -webkit-crisp-edges;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-`}</style>
+     {/* Replace the current bottom div with this */}
+<div className="w-full max-w-2xl mx-auto h-72 mb-5 z-10 bg-black/70 rounded-t-xl mt-10 py-6 overflow-y-scroll px-4 sm:px-6 text-white border-t border-yellow-400">
+  <h3 className="text-center text-xl font-bold mb-4 text-yellow-300">
+    Spin Wheel Progress
+  </h3>
+  <div className="z-10 overflow-x-auto">
+    <table className="w-full text-sm border-separate border-spacing-y-2">
+      <thead>
+        <tr className="text-yellow-300 font-semibold text-left">
+          <th className="px-3 py-2">#</th>
+          <th className="px-3 py-2">Status</th>
+          <th className="px-3 py-2">Prize</th>
+        </tr>
+      </thead>
+      <tbody>
+        {spinHistory.map((item, i) => (
+          <tr key={i} className="bg-gray-800/60 hover:bg-gray-700/80 transition rounded-lg">
+            <td className="px-3 py-2 text-yellow-300 font-semibold">Spin {i + 1}</td>
+            <td className="px-3 py-2 text-gray-200">{item.status}</td>
+            <td className="px-3 py-2 text-green-400 font-bold">
+              {typeof item.prize.amount === 'number' 
+                ? `$${item.prize.amount}`
+                : item.prize.amount.includes('Ringtones')
+                ? item.prize.amount
+                : item.prize.amount === "-" 
+                ? "-"
+                : `$${item.prize.amount}`}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
+      
     </div>
     
   );

@@ -458,11 +458,7 @@ const purchaseTicketMutation = useMutation({
                 ) : (
                   <button
                     // only two possible behaviors
-                    onClick={
-                      competition.type === "instant"
-                        ? scrollToRange
-                        : handleOpenQuiz
-                    }
+                   onClick={scrollToRange}
                     disabled={isSoldOut || purchaseTicketMutation.isPending}
                     className={`w-full py-4 rounded-lg font-bold text-lg transition-opacity ${
                       isSoldOut
@@ -662,7 +658,7 @@ const purchaseTicketMutation = useMutation({
         </div>
       </section>
       <Dialog open={showQuiz} onOpenChange={setShowQuiz}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[90vw] max-w-sm sm:max-w-md mx-auto flex flex-col justify-center items-center text-center rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-center">
               Answer to Proceed
