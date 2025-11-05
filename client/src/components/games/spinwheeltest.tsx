@@ -347,7 +347,7 @@ useEffect(() => {
         
         <canvas
           ref={canvasRef}
-          className="w-[100%] h-[100%] sm:w-[99%] sm:h-[99%] md:w-[89%] md:h-[89%] rounded-full"
+          className="w-full h-full rounded-full"
         />
 
         {/* Center video - FIXED FOR iOS */}
