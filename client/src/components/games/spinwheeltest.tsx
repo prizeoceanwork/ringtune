@@ -22,6 +22,28 @@ import Toyota from "../../../../attached_assets/spin/Toyota.svg";
 import Volkswagen from "../../../../attached_assets/spin/Volkswagen.svg";
 
 
+import prize1 from "../../../../attached_assets/Car/astonmartin.png";
+import prize2 from "../../../../attached_assets/Car/audi.png";
+import prize3 from "../../../../attached_assets/Car/bentley.png";
+import prize4 from "../../../../attached_assets/Car/bmw.png";
+import prize5 from "../../../../attached_assets/Car/ferrari-emblem-1.svg";
+import prize6 from "../../../../attached_assets/Car/ford.png";
+import prize7 from "../../../../attached_assets/Car/honda.png";
+import prize8 from "../../../../attached_assets/Car/jaguar.png";
+import prize9 from "../../../../attached_assets/Car/lamborghini.png";
+import prize10 from "../../../../attached_assets/Car/landrover.png";
+import prize11 from "../../../../attached_assets/Car/lexus.png";
+import prize12 from "../../../../attached_assets/Car/maercedes.png";
+import prize13 from "../../../../attached_assets/Car/maserati.png";
+import prize14 from "../../../../attached_assets/Car/mclaren.png";
+import prize15 from "../../../../attached_assets/Car/mini.png";
+import prize16 from "../../../../attached_assets/Car/nissan.png";
+import prize17 from "../../../../attached_assets/Car/porsche.png";
+import prize18 from "../../../../attached_assets/Car/Rolls-Royce_Motors-Logo.wine.png";
+import prize19 from "../../../../attached_assets/Car/toyota.png";
+import prize20 from "../../../../attached_assets/Car/wv.png";
+
+
 interface SpinWheelProps {
   onSpinComplete: (winnerSegment: number, winnerLabel: string, winnerPrize: any) => void;
   isSpinning: boolean;
@@ -60,6 +82,13 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ onSpinComplete, isSpinning, setIs
 const [spinHistory, setSpinHistory] = useState<
   { status: string; prize: { brand: string; amount: any } }[]
 >([]);
+
+
+  const prizeImages = [
+    prize1, prize2, prize3, prize4, prize5, prize6, prize7, prize8, prize9, 
+    prize10, prize11, prize12, prize13, prize14, prize15, prize16, prize17, 
+    prize18, prize19
+  ];
 
   // Define prizes with amounts for each segment
   const segments = [
@@ -137,36 +166,25 @@ useEffect(() => {
   }
 }, [spinHistory]);
 
-  // Load all images
-useEffect(() => {
-  const loadImages = async () => {
-    const images: { [key: string]: HTMLImageElement } = {};
+  
+  // Load all prize images
+  useEffect(() => {
+    const images: HTMLImageElement[] = [];
+    let loadedCount = 0;
 
-    for (const segment of segments) {
-      if (segment.icon === "❌") continue;
-
-      if (typeof segment.icon === "string") {
-        const img = new Image();
-
-        // Important: Allow cross-origin for SVG and PNG
-        img.crossOrigin = "anonymous";
-        img.src = segment.icon;
-
-        // Wait for image load
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
-
-        images[segment.label] = img;
-      }
-    }
-
-    setLoadedImages(images);
-  };
-
-  loadImages();
-}, [segments]);
+    prizeImages.forEach((src, index) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = src;
+      img.onload = () => {
+        loadedCount++;
+        if (loadedCount === prizeImages.length) {
+          setLoadedImages(images);
+        }
+      };
+      images[index] = img;
+    });
+  }, []);
 
 
   // iOS FIX: Prevent video fullscreen on click
@@ -201,129 +219,112 @@ useEffect(() => {
     };
   }, []);
 
-  const drawWheel = (angle: number) => {
+  const drawWheel = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    // Get device pixel ratio for ultra-sharp rendering on high-DPI displays
+    // Use VERY high multiplier for maximum clarity on ALL devices, especially when zooming
+    const isMobile = window.innerWidth < 768;
+    const baseDpr = window.devicePixelRatio || 1;
+    // Multiply by 4 for ultra-high quality that stays sharp even when zoomed
+    const dpr = isMobile ? Math.max(baseDpr * 4, 4) : Math.max(baseDpr * 3, 3);
     
-    ctx.imageSmoothingEnabled = false;
+    // Set display size (CSS pixels) - responsive sizing with increased size
+    const displaySize = isMobile ? Math.min(window.innerWidth - 60, 450) : 600;
+    const centerRadius = isMobile ? 35 : 45;
+    const centerFontSize = isMobile ? 11 : 14;
+    
+    // Set actual canvas size (accounting for device pixel ratio)
+    canvas.width = displaySize * dpr;
+    canvas.height = displaySize * dpr;
+    
+    // Scale canvas CSS size back to display size
+    canvas.style.width = `${displaySize}px`;
+    canvas.style.height = `${displaySize}px`;
+    
+    // Scale context to match device pixel ratio
+    ctx.scale(dpr, dpr);
+    
+    // Enable high-quality rendering settings
+    ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const radius = Math.min(cx, cy) * 0.9;
-    const segAngle = (2 * Math.PI) / segments.length;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const centerX = displaySize / 2;
+    const centerY = displaySize / 2;
+    const radius = Math.min(centerX, centerY) - 12;
+    const segmentAngle = (2 * Math.PI) / segments.length;
 
-    segments.forEach((s, i) => {
-      const start = i * segAngle + angle;
-      const end = start + segAngle;
+    ctx.clearRect(0, 0, displaySize, displaySize);
+
+    // Draw segments (at 0 rotation - rotation will be done via CSS transform)
+    segments.forEach((segment, index) => {
+      const startAngle = index * segmentAngle;
+      const endAngle = startAngle + segmentAngle;
 
       // Draw segment
       ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius, start, end);
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
       ctx.closePath();
-      ctx.fillStyle = s.color;
+      ctx.fillStyle = segment.color;
       ctx.fill();
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 1;
+
+      // Draw border
+      ctx.strokeStyle = "#D4AF37"; // Gold
+      ctx.lineWidth = isMobile ? 1.5 : 2.5;
       ctx.stroke();
 
-      // Draw icon and text
+      // Draw icon or X
       ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(start + segAngle / 2);
       
-      const icon = s.icon;
-      let imgSize = radius * 0.12;
-      let iconWidth = imgSize * 1;
-      let iconHeight = imgSize * 1;
-
-      if (["Aston Martin", "Audi", "Bentley", "Mini Cooper"].includes(s.label)) {
-        imgSize = radius * 0.12;
-        iconWidth = imgSize * 1.5;
-      }
-      if ("Bentley".includes(s.label)) {
-        imgSize = radius * 0.10;
-        iconWidth = imgSize * 2;
-      }
-      if ("Mini Cooper".includes(s.label)) {
-        imgSize = radius * 0.10;
-        iconWidth = imgSize * 2.2;
-      }
-      if (s.label === "R") {
-        imgSize = radius * 0.22;
-        iconWidth = imgSize * 1.1;
-         iconHeight = imgSize * 1.1; 
+      const segmentMiddleAngle = startAngle + (endAngle - startAngle) / 2;
+      const imageSize = isMobile ? 38 : 50;
+      const imageDistance = radius * 0.68;
+      const imageX = centerX + imageDistance * Math.cos(segmentMiddleAngle);
+      const imageY = centerY + imageDistance * Math.sin(segmentMiddleAngle);
+      
+      ctx.translate(imageX, imageY);
+      
+      if (segment.isNoWin) {
+        // Draw red X for no-win segments
+        const xSize = isMobile ? 30 : 40;
+        ctx.strokeStyle = "#ff0033";
+        ctx.lineWidth = isMobile ? 4 : 5;
+        ctx.lineCap = "round";
+        
+        ctx.beginPath();
+        ctx.moveTo(-xSize / 2, -xSize / 2);
+        ctx.lineTo(xSize / 2, xSize / 2);
+        ctx.moveTo(xSize / 2, -xSize / 2);
+        ctx.lineTo(-xSize / 2, xSize / 2);
+        ctx.stroke();
+      } else if (loadedImages.length > 0 && loadedImages[index]) {
+        // Draw prize image
+        ctx.drawImage(loadedImages[index], -imageSize / 2, -imageSize / 2, imageSize, imageSize);
       }
       
-       if ("Ferrari".includes(s.label)) {
-        imgSize = radius * 0.10;
-      iconHeight = imgSize * 1.5;
-      }
-      // Handle emoji case
-      if (icon === "❌") {
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#fff";
-        ctx.font = `bold ${radius * 0.10}px Arial`;
-        ctx.fillText(icon, radius * 0.85, 0);
-      } 
-      // Handle loaded images
-        else if (loadedImages[s.label]) {
-  const img = loadedImages[s.label];
-
-  ctx.save();
-  ctx.translate(radius * 0.85, 0);
-  ctx.rotate(Math.PI / 2);
-
-  // Detect if it's SVG or PNG
-  const isSvg = (img.src || "").toLowerCase().endsWith(".svg");
-
-  // Adjust smoothing depending on format
-  ctx.imageSmoothingEnabled = !isSvg; // turn OFF for SVG to keep it sharp
-  ctx.imageSmoothingQuality = isSvg ? "high" : "low";
-
-  const drawX = Math.round(-iconWidth / 2);
-  const drawY = Math.round(-iconHeight  / 2);
-  const drawWidth = Math.round(iconWidth);
-  const drawHeight = Math.round(iconHeight );
-
-  ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-  ctx.restore();
-}
-      // Fallback for unloaded images
-      else {
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#fff";
-        ctx.font = `${radius * 0.06}px Arial`;
-        ctx.fillText("?", radius * 0.75, 0);
-      }
-
       ctx.restore();
     });
 
+    // Draw center circle
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, centerRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fill();
+    ctx.strokeStyle = "#D4AF37";
+    ctx.lineWidth = isMobile ? 3 : 4;
+    ctx.stroke();
+
     // Draw center text
+    ctx.fillStyle = "#D4AF37";
+    ctx.font = `bold ${centerFontSize}px Inter`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "#fff";
-    ctx.font = `bold ${radius * 0.06}px Arial`;
-    ctx.fillText("RingTone", cx, cy - 30);
-    ctx.fillText("Riches", cx, cy - 10);
-    ctx.font = `bold ${radius * 0.08}px Arial`;
-    ctx.fillStyle = "#FFD700";
-    ctx.fillText("SPIN", cx, cy + 15);
-
-    // Winner text
-    if (!isSpinning && winner) {
-      ctx.fillStyle = "#fff";
-      ctx.font = `bold ${radius * 0.07}px Arial`;
-      ctx.fillText(winner, cx, cy - 20);
-    }
+    ctx.fillText("SPIN", centerX, centerY);
   };
 
   const getWinner = (angle: number) => {
@@ -361,7 +362,7 @@ useEffect(() => {
     const progress = Math.min((time - start) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     const current = rotation + eased * (target - rotation);
-    drawWheel(current);
+    drawWheel();
 
     if (progress < 1) {
       requestAnimationFrame(animate);
@@ -395,19 +396,19 @@ useEffect(() => {
   requestAnimationFrame(animate);
 };
 
+  // Initial draw and window resize handling (draw once, not on rotation)
   useEffect(() => {
-    const resize = () => {
-      const canvas = canvasRef.current;
-      if (!canvas || !canvas.parentElement) return;
-      const size = Math.min(canvas.parentElement.clientWidth, 601);
-      canvas.width = size;
-      canvas.height = size;
-      drawWheel(rotation);
+    if (loadedImages.length > 0) {
+      drawWheel();
+    }
+
+    const handleResize = () => {
+      drawWheel();
     };
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, [rotation, isSpinning, winner, loadedImages]);
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [loadedImages]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden z-10">
@@ -432,16 +433,25 @@ useEffect(() => {
        Available Spin{ticketCount !== 1 ? "s" : ""} :{ticketCount} 
     </div>
   )} */}
-       <img
+       {/* <img
   src="https://res.cloudinary.com/dziy5sjas/image/upload/v1761047804/wheel_basnqc.png"
   alt="Wheel Ring"
   className="absolute -top-4 md:-top-0 inset-0  w-[108%] h-[108%] md:w-full md:h-full object-cover z-20 pointer-events-none"
-/>
+/> */}
         
         <canvas
-          ref={canvasRef}
-          className="w-[100%] h-[100%] sm:w-[99%] sm:h-[99%] md:w-[89%] md:h-[89%] rounded-full"
-        />
+            ref={canvasRef}
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              height: 'auto',
+              borderRadius: '50%',
+              imageRendering: 'crisp-edges',
+              // Prevent antialiasing blur
+              WebkitFontSmoothing: 'antialiased',
+              MozOsxFontSmoothing: 'grayscale'
+            }}
+          />
 
         {/* Center video - FIXED FOR iOS */}
         <video

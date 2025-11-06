@@ -20,48 +20,32 @@ interface WinnerWithDetails {
 
 export default function PastWinners() {
   
-const { data: winners = [], isLoading } = useQuery<WinnerWithDetails[]>({
-  queryKey: ["/api/winners"],
-  queryFn: async () => {
-    const res = await fetch("/api/winners");
-    const data = await res.json();
+  const { data: winners = [], isLoading } = useQuery<WinnerWithDetails[]>({
+    queryKey: ["/api/winners"],
+    queryFn: async () => {
+      const res = await fetch("/api/winners");
+      const data = await res.json();
 
-    return data.map((item: any) => ({
-      id: item.winners.id,
-      prizeDescription: item.winners.prizeDescription,
-      prizeValue: item.winners.prizeValue,
-      imageUrl: item.winners.imageUrl,
-      createdAt: item.winners.createdAt,
-      user: {
-        firstName: item.users.firstName,
-        lastName: item.users.lastName,
-      },
-      competition: {
-        title: item.competitions.title,
-      },
-    }));
-  },
-});
- console.log("API Response:", winners);
-  console.log("Loading:", isLoading);
-  console.log("Error:", Error);
-  console.log("Winners length:", winners?.length);
-
-  // 🧩 Optional fallback (only used if no winners yet)
-  const dummyWinners = [
-    {
-      id: "w1",
-      prizeDescription: "iPhone 15 Pro Max",
-      prizeValue: "1199",
-      imageUrl:
-        "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?q=80&w=800&auto=format&fit=crop",
-      createdAt: new Date().toISOString(),
-      user: { firstName: "Sarah", lastName: "Johnson" },
-      competition: { title: "Luxury Tech Giveaway" },
+      return data.map((item: any) => ({
+        id: item.winners.id,
+        prizeDescription: item.winners.prizeDescription,
+        prizeValue: item.winners.prizeValue,
+        imageUrl: item.winners.imageUrl,
+        createdAt: item.winners.createdAt,
+        user: {
+          firstName: item.users.firstName,
+          lastName: item.users.lastName,
+        },
+        competition: {
+          title: item.competitions.title,
+        },
+      }));
     },
-  ];
+  });
 
-  const displayWinners = winners.length > 0 ? winners : dummyWinners;
+  console.log("API Response:", winners);
+  console.log("Loading:", isLoading);
+  console.log("Winners length:", winners?.length);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -98,17 +82,20 @@ const { data: winners = [], isLoading } = useQuery<WinnerWithDetails[]>({
                 </div>
               ))}
             </div>
-          ) : displayWinners.length === 0 ? (
+          ) : winners.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-muted-foreground text-lg" data-testid="text-no-winners">
-                No winners to display yet. Be the first!
-              </p>
+              <div className="max-w-md mx-auto space-y-4">
+                <h3 className="text-2xl font-bold text-foreground">
+                  No Winners Yet
+                </h3>
+                <p className="text-muted-foreground text-lg">
+                  Be the first to win amazing prizes! Stay tuned for upcoming competitions.
+                </p>
+              </div>
             </div>
           ) : (
-            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            
-              {displayWinners.map((winner) => (
+              {winners.map((winner) => (
                 <div
                   key={winner.id}
                   className="bg-card rounded-xl border border-border overflow-hidden hover:transform hover:scale-105 transition-transform"

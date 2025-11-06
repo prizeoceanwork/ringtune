@@ -647,7 +647,7 @@ const purchaseTicketMutation = useMutation({
           </h2>
           <p className="text-xl text-gray-200 mb-8">
             This is your chance to win luxury items for a fraction of the cost
-            here at RingToneRiches!
+            here at RingTone Riches!
           </p>
           <button
             onClick={() => setLocation("/")}

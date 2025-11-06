@@ -98,7 +98,7 @@ export default function FeaturedCompetitions({ competitions }: FeaturedCompetiti
         
         .featured-competitions-slider .slick-dots li.slick-active button:before {
           opacity: 1;
-          color: #f59e0b;
+          color: #FACC14;
         }
         
         /* Large Yellow Arrows */

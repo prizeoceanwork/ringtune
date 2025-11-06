@@ -24,7 +24,7 @@ import { nanoid } from "nanoid";
 import { db } from "./db";
 import {stripe} from "./stripe";
 import { cashflows } from "./cashflows";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 // Initialize Stripe only if keys are available
 // let stripe: Stripe | null = null;
 // if (process.env.STRIPE_SECRET_KEY) {
@@ -1785,27 +1785,35 @@ app.put("/api/admin/competitions/:id", isAuthenticated, isAdmin, async (req: any
 app.delete("/api/admin/competitions/:id", isAuthenticated, isAdmin, async (req: any, res) => {
   try {
     const { id } = req.params;
-    
-    // First delete related records
+
+    // ✅ 1. Delete all transactions related to orders for this competition
+    await db
+      .delete(transactions)
+      .where(inArray(transactions.orderId, db.select({ id: orders.id }).from(orders).where(eq(orders.competitionId, id))));
+
+    // ✅ 2. Delete all tickets related to this competition
     await db.delete(tickets).where(eq(tickets.competitionId, id));
+
+    // ✅ 3. Delete all orders related to this competition
     await db.delete(orders).where(eq(orders.competitionId, id));
-    
-    // Then delete competition
+
+    // ✅ 4. Finally, delete the competition itself
     const [deletedCompetition] = await db
       .delete(competitions)
       .where(eq(competitions.id, id))
       .returning();
-    
+
     if (!deletedCompetition) {
       return res.status(404).json({ message: "Competition not found" });
     }
-    
+
     res.json({ message: "Competition deleted successfully" });
   } catch (error) {
     console.error("Error deleting competition:", error);
     res.status(500).json({ message: "Failed to delete competition" });
   }
 });
+
 
 //  Delete user
 app.delete("/api/admin/users/:id", isAuthenticated , isAdmin , async (req: any , res) =>{
