@@ -196,10 +196,10 @@ export default function Landing() {
               <input
                 type="email"
                 placeholder="Enter your email..."
-                className="flex-1 bg-input border border-border text-foreground px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex-1 email-input bg-input border border-border text-foreground px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <button
-                className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity"
+                className="bg-primary sub-btn text-primary-foreground px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity"
               >
                 SUBSCRIBE
               </button>
@@ -207,7 +207,19 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
+      <style>
+       {`
+        @media (max-width: 376px) {
+        .email-input {
+            font-size: 12px;
+            padding: 14px 10px;
+          }
+          .sub-btn{
+            font-size: 12px;
+            padding: 4px 16px;
+          }
+        }`}
+      </style>
       <Footer />
     </div>
   );

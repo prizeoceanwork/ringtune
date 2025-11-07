@@ -13,61 +13,57 @@ export default function PlayResponsibly() {
 
         <div className="space-y-6 leading-relaxed text-muted-foreground">
           <p>
-            At <span className="font-semibold text-foreground">Ringtone Riches</span>, we want your experience to be fun, exciting, and within your comfort zone. 
-            Participating in our competitions should always be positive and enjoyable. However, it’s important to be mindful 
-            of your spending and ensure that your participation remains something you control and enjoy.
+            At <span className="font-semibold text-foreground">Ringtone Riches</span>, we want your experience to remain positive, enjoyable, and within your comfort zone. Our competitions are designed purely for entertainment and should never cause financial pressure or distress. We encourage all participants to take part responsibly and to stay aware of their spending and time.
           </p>
 
           <h2 className="text-2xl font-semibold text-foreground mt-10">Understanding Your Spending</h2>
           <p>
-            The first step towards responsible participation is being aware of your spending habits. Take a moment to consider 
-            how much you are spending on competitions and whether it aligns with your overall budget and priorities.
+          Responsible participation begins with awareness. Take time to reflect on how much you spend on competitions and ensure it fits comfortably within your personal budget.
           </p>
+          <p>Ask yourself</p>
           <ul className="list-disc list-inside space-y-2">
             <li>Am I setting clear limits on how much I spend?</li>
-            <li>Am I keeping track of my entries and associated costs?</li>
-            <li>Are my competition entries taking priority over essential expenses?</li>
-            <li>Am I borrowing money or using funds intended for other purposes to enter competitions?</li>
+            <li>Am I keeping track of my entries and costs?</li>
+            <li>Are competition entries taking priority over essential expenses?</li>
+            <li>Am I using money intended for other purposes to take part?</li>
           </ul>
 
           <h2 className="text-2xl font-semibold text-foreground mt-10">Tips for Mindful Participation</h2>
           <ul className="list-disc list-inside space-y-2">
-            <li>Set a Budget — Decide in advance how much you’re comfortable spending and stick to it.</li>
-            <li>Time Limits — Be mindful of your time; take breaks and maintain perspective.</li>
-            <li>Don’t Chase Losses — Each competition is independent; avoid spending to recover losses.</li>
-            <li>Participate for Enjoyment — Focus on the fun, not just winning.</li>
-            <li>Be Honest with Yourself — Regularly review your spending and habits.</li>
-            <li>Talk About It — Discuss concerns with trusted friends or family for perspective.</li>
+            <li>Set a Budget: Decide how much you are comfortable spending and stay within that amount.</li>
+            <li>Manage Your Time: Take regular breaks and maintain perspective.</li>
+            <li>Avoid Chasing Losses: Each draw is independent—do not increase spending to recover previous entries.</li>
+            <li>Play for Enjoyment: Focus on the fun and excitement rather than the outcome.</li>
+            <li>Review Regularly: Check your spending and habits to ensure everything remains healthy.</li>
+            <li>Seek Support: Talk to trusted friends or family if you have any concerns.</li>
           </ul>
 
           <h2 className="text-2xl font-semibold text-foreground mt-10">Recognising Potential Difficulties</h2>
-          <p>Be aware of signs that participation might be becoming problematic:</p>
+          <p>You may wish to take a break or seek support if you notice any of the following:</p>
           <ul className="list-disc list-inside space-y-2">
-            <li>Spending more money than you can comfortably afford</li>
-            <li>Feeling preoccupied with competitions</li>
-            <li>Lying about your participation or spending</li>
-            <li>Experiencing guilt or anxiety about entries</li>
-            <li>Neglecting responsibilities or relationships</li>
-            <li>Trying to win back losses by entering more competitions</li>
+            <li>Spending more than you can comfortably afford</li>
+            <li>Feeling preoccupied with competitions or entries</li>
+            <li>Concealing your spending or participation</li>
+            <li>Feeling guilt, stress, or anxiety related to competitions</li>
+            <li>Neglecting personal or financial responsibilities</li>
+            <li>Trying to win back previous losses by entering more competitions</li>
           </ul>
 
           <h2 className="text-2xl font-semibold text-foreground mt-10">Taking a Break or Seeking Support</h2>
           <p>
-            If you feel you need time away from competitions, we offer options to help you manage your access:
+            Your wellbeing is important to us. If you feel you need a break from competitions, we can help.
           </p>
           <ul className="list-disc list-inside space-y-2">
             <li>
-              <span className="font-semibold">Temporary Account Blocking:</span> Contact our support team to temporarily block your account for a chosen period.
+              Temporary Account Suspension: You may contact our support team to temporarily block your account for a chosen period.
             </li>
             <li>
-              <span className="font-semibold">Account Termination:</span> Request permanent closure of your account if you prefer a longer break.
+           Permanent Account Closure: You may request permanent closure of your account if you would like a longer break.
             </li>
           </ul>
 
           <p>
-            Your well-being matters to us at <span className="font-semibold text-foreground">Ringtone Riches</span>. 
-            Participate responsibly and reach out to our support team if you have concerns or would like to discuss taking a break. 
-            Remember — the goal is to have fun and enjoy the thrill of competition responsibly.
+           For assistance or to discuss any concerns, please contact support@ringtoneriches.co.uk. Our goal is to ensure that every customer enjoys the thrill of competition safely, responsibly, and within their means.
           </p>
         </div>
       </main>

@@ -32,28 +32,57 @@ const CSS_HEIGHT = 350;
 const AUTO_CLEAR_THRESHOLD = 0.7;
 const SAMPLE_GAP = 4;
 
+// Define the exact prize mapping for each landmark
+const landmarkPrizes: { [key: string]: { type: string; value: string } } = {
+  "Eiffel Tower": { type: "cash", value: "5000" },
+  "Taj Mahal": { type: "cash", value: "2500" },
+  "Statue of Liberty": { type: "cash", value: "1000" },
+  "Colosseum": { type: "cash", value: "750" },
+  "Tower of Pisa": { type: "cash", value: "500" },
+  "Burj Khalifa": { type: "cash", value: "250" },
+  "Empire State": { type: "cash", value: "150" },
+  "Times Square": { type: "cash", value: "100" },
+  "Buckingham Palace": { type: "cash", value: "80" },
+  "Big Ben": { type: "cash", value: "50" },
+  "Tower Bridge": { type: "cash", value: "30" },
+  "Notre Dame": { type: "cash", value: "20" },
+  "Great Wall of China": { type: "cash", value: "10" },
+  "Berlin Wall": { type: "ringtones", value: "1000" },
+  "Pyramids of Giza": { type: "ringtones", value: "850" },
+  "Grand Canyon": { type: "ringtones", value: "650" },
+  "Mount Everest": { type: "ringtones", value: "450" },
+  "Golden Gate Bridge": { type: "ringtones", value: "250" },
+  "Stonehenge": { type: "ringtones", value: "150" },
+  "Great Barrier Reef": { type: "ringtones", value: "100" },
+};
+
 const landmarkImages = [
-  { name: "Barrier Reef", src: BarrierReef },
-  { name: "Angel of the North", src: AngleOfNorth },
-  { name: "Big Ben", src: BigBen },
-  { name: "Buckingham Palace", src: BuckinghamPalace },
-  { name: "Burj Khalifa", src: Burj },
-  { name: "Colosseum", src: colosseum },
-  { name: "Eiffel Tower", src: EiffelTower },
-  { name: "Empire State", src: EmpireState },
-  { name: "Golden Gate Bridge", src: GoldenGate },
-  { name: "Grand Canyon", src: GrandCanyon },
-  { name: "Great Wall of China", src: GreatWallOfChina },
-  { name: "Mount Everest", src: MountEverest },
-  { name: "Notre Dame", src: NotreDame },
-  { name: "Pyramids of Pisa", src: PayramidsOfPisa },
-  { name: "Statue of Liberty", src: StatueOfLiberty },
-  { name: "Stonehenge", src: StoneH },
-  { name: "Taj Mahal", src: TajMahal },
-  { name: "Times Square", src: TimesSquare },
-  { name: "Tower Bridge", src: TowerBridge },
-  { name: "Tower of Pisa", src: TowerOfPisa },
+  { name: "Great Barrier Reef", src: BarrierReef, prize: landmarkPrizes["Great Barrier Reef"] },
+  { name: "Angel of the North", src: AngleOfNorth, prize: { type: "none", value: "0" } }, // No prize defined
+  { name: "Big Ben", src: BigBen, prize: landmarkPrizes["Big Ben"] },
+  { name: "Buckingham Palace", src: BuckinghamPalace, prize: landmarkPrizes["Buckingham Palace"] },
+  { name: "Burj Khalifa", src: Burj, prize: landmarkPrizes["Burj Khalifa"] },
+  { name: "Colosseum", src: colosseum, prize: landmarkPrizes["Colosseum"] },
+  { name: "Eiffel Tower", src: EiffelTower, prize: landmarkPrizes["Eiffel Tower"] },
+  { name: "Empire State", src: EmpireState, prize: landmarkPrizes["Empire State"] },
+  { name: "Golden Gate Bridge", src: GoldenGate, prize: landmarkPrizes["Golden Gate Bridge"] },
+  { name: "Grand Canyon", src: GrandCanyon, prize: landmarkPrizes["Grand Canyon"] },
+  { name: "Great Wall of China", src: GreatWallOfChina, prize: landmarkPrizes["Great Wall of China"] },
+  { name: "Mount Everest", src: MountEverest, prize: landmarkPrizes["Mount Everest"] },
+  { name: "Notre Dame", src: NotreDame, prize: landmarkPrizes["Notre Dame"] },
+  { name: "Pyramids of Giza", src: PayramidsOfPisa, prize: landmarkPrizes["Pyramids of Giza"] },
+  { name: "Statue of Liberty", src: StatueOfLiberty, prize: landmarkPrizes["Statue of Liberty"] },
+  { name: "Stonehenge", src: StoneH, prize: landmarkPrizes["Stonehenge"] },
+  { name: "Taj Mahal", src: TajMahal, prize: landmarkPrizes["Taj Mahal"] },
+  { name: "Times Square", src: TimesSquare, prize: landmarkPrizes["Times Square"] },
+  { name: "Tower Bridge", src: TowerBridge, prize: landmarkPrizes["Tower Bridge"] },
+  { name: "Tower of Pisa", src: TowerOfPisa, prize: landmarkPrizes["Tower of Pisa"] },
 ];
+
+// Filter out landmarks that don't have prizes defined
+const prizeLandmarks = landmarkImages.filter(landmark => 
+  landmark.prize.type !== "none" && landmark.prize.value !== "0"
+);
 
 function getRandomImages(n: number) {
   const shuffled = [...landmarkImages].sort(() => 0.5 - Math.random());
@@ -66,9 +95,16 @@ function generateScratchGrid(mode: "tight" | "loose" = "loose") {
   let images = getRandomImages(6);
 
   if (isWinner) {
-    const chosen = landmarkImages[Math.floor(Math.random() * landmarkImages.length)];
-    const winIndices = [0, 1, 4];
-    winIndices.forEach((i) => (images[i] = chosen));
+    // Choose a random landmark that has a prize
+    const winningLandmarks = prizeLandmarks.filter(landmark => 
+      mode === "tight" ? landmark.prize.type === "cash" : true
+    );
+    
+    if (winningLandmarks.length > 0) {
+      const chosen = winningLandmarks[Math.floor(Math.random() * winningLandmarks.length)];
+      const winIndices = [0, 1, 4];
+      winIndices.forEach((i) => (images[i] = chosen));
+    }
   }
 
   return { images, isWinner };
@@ -107,12 +143,7 @@ const hasCompletedRef = useRef(false);
   { status: string; prize: { type: string; value: string } }[]
 >([]);
 
-  const cashPrizes = mode === "tight" ? ["0.10", "0.25"] : ["0.25", "0.50", "1.00"];
-  const ringtunePrizes = ["50", "100", "250", "500", "1000"];
-  const allPrizes = [
-    ...cashPrizes.map((c) => ({ type: "cash", value: c })),
-    ...ringtunePrizes.map((p) => ({ type: "points", value: p })),
-  ];
+ 
 
     // ✅ SIMPLIFIED INITIALIZATION - Only run once when scratchTicketCount changes
   useEffect(() => {
@@ -176,14 +207,21 @@ const hasCompletedRef = useRef(false);
   // }, [scratchTicketCount]);
 
   // Setup new scratch card session
-  useEffect(() => {
+    useEffect(() => {
     const { images, isWinner } = generateScratchGrid(mode);
     setImages(images);
     setIsWinner(isWinner);
-    setSelectedPrize(allPrizes[Math.floor(Math.random() * allPrizes.length)]);
+    
+    // Set selected prize based on the winning landmark (if any)
+    if (isWinner) {
+      const winningImage = images[0]; // All winning images are the same
+      setSelectedPrize(winningImage.prize);
+    } else {
+      setSelectedPrize({ type: "none", value: "Lose" });
+    }
+    
     initCanvas();
-  }, [sessionKey]);
-
+  }, [sessionKey, mode]);
   useEffect(() => {
     scratchSoundRef.current = new Audio(scratchSoundFile);
     scratchSoundRef.current.loop = true;

@@ -200,7 +200,7 @@ const finalAmount = totalAmount - walletUsed - finalPointsUsed;
                   ? "border-yellow-500 bg-yellow-500/10"
                   : "border-yellow-800 bg-black hover:bg-zinc-800"
               }`}
-              onClick={() => handleMethodToggle("walletBalance")}
+            
             >
               <div className="flex items-center space-x-3">
                 <input
@@ -227,7 +227,7 @@ const finalAmount = totalAmount - walletUsed - finalPointsUsed;
                   ? "border-amber-400 bg-amber-500/10"
                   : "border-yellow-800 bg-black hover:bg-zinc-800"
               }`}
-              onClick={() => handleMethodToggle("ringtonePoints")}
+     
             >
               <div className="flex items-center space-x-3">
                 <input
