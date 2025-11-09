@@ -254,12 +254,12 @@ export default function Header() {
               )}
 
               {/* Close button at bottom */}
-              <button
+              {/* <button
                 onClick={handleMobileToggle}
                 className="absolute bottom-10 text-white/70 hover:text-white transition-all duration-300 transform hover:scale-110"
               >
                 <i className="fas fa-times text-2xl"></i>
-              </button>
+              </button> */}
             </div>
           </div>
         )}

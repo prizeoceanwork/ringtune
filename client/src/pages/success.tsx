@@ -9,46 +9,53 @@ export default function WalletSuccess() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const confirmPayment = async () => {
-      const params = new URLSearchParams(window.location.search);
-      const sessionId = params.get("session_id");
+  const confirmPayment = async () => {
+    const params = new URLSearchParams(window.location.search);
+    
+    // ✅ Cashflows returns "paymentjobref" parameter
+    const sessionId = params.get("paymentjobref");
+    
+    console.log("🔍 URL Parameters:", Object.fromEntries(params.entries()));
+    console.log("🔍 Extracted sessionId:", sessionId);
 
-      if (!sessionId) {
-        toast({ title: "Error", description: "Missing session ID", variant: "destructive" });
-        return;
-      }
+    if (!sessionId) {
+      toast({ 
+        title: "Error", 
+        description: "Missing session ID. Parameters: " + JSON.stringify(Object.fromEntries(params.entries())), 
+        variant: "destructive" 
+      });
+      return;
+    }
 
-      try {
-        const res = await apiRequest("POST", "/api/wallet/confirm-topup", { sessionId });
-        if (res.ok) {
-          toast({
-            title: "Payment Confirmed",
-            description: "Your wallet has been updated.",
-          });
-          // ✅ Refresh user + transactions data
-          queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
-          // Redirect back to main wallet page
-          setTimeout(() => (window.location.href = "/wallet"), 1500);
-        } else {
-          const data = await res.json();
-          toast({
-            title: "Error",
-            description: data.message || "Could not confirm payment",
-            variant: "destructive",
-          });
-        }
-      } catch (err: any) {
+    try {
+      const res = await apiRequest("POST", "/api/wallet/confirm-topup", { sessionId });
+      if (res.ok) {
+        toast({
+          title: "Payment Confirmed",
+          description: "Your wallet has been updated.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
+        setTimeout(() => (window.location.href = "/wallet"), 1500);
+      } else {
+        const data = await res.json();
         toast({
           title: "Error",
-          description: err.message || "Failed to confirm payment",
+          description: data.message || "Could not confirm payment",
           variant: "destructive",
         });
       }
-    };
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to confirm payment",
+        variant: "destructive",
+      });
+    }
+  };
 
-    confirmPayment();
-  }, [queryClient, toast]);
+  confirmPayment();
+}, [queryClient, toast]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground">

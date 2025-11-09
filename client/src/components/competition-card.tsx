@@ -28,7 +28,7 @@ export default function CompetitionCard({ competition, authenticated = false }: 
   return (
     <>
       <div 
-        className="competition-card bg-card h-fit rounded-sm border border-border  overflow-hidden" 
+        className="competition-card bg-card h-full rounded-sm border border-border  overflow-hidden" 
         data-type={competition.type}
         data-testid={`card-competition-${competition.id}`}
       >

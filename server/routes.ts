@@ -289,66 +289,66 @@ app.post("/api/create-payment-intent", isAuthenticated, async (req: any, res) =>
 });
 
 // Update the payment success route
-app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
-  try {
-    const { sessionId } = req.body;
-    if (!sessionId) {
-      return res.status(400).json({ message: "Missing sessionId" });
-    }
+// app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
+//   try {
+//     const { sessionId } = req.body;
+//     if (!sessionId) {
+//       return res.status(400).json({ message: "Missing sessionId" });
+//     }
 
-    // Verify payment with Cashflows
-    const payment = await cashflows.getPaymentStatus(sessionId);
+//     // Verify payment with Cashflows
+//     const payment = await cashflows.getPaymentStatus(sessionId);
 
-    if (payment.status !== "COMPLETED") {
-      return res.status(400).json({ message: "Payment not completed" });
-    }
+//     if (payment.status !== "COMPLETED") {
+//       return res.status(400).json({ message: "Payment not completed" });
+//     }
 
-    const { userId, competitionId, orderId, quantity } = payment.metadata || {};
-    const amount = (payment.amount?.value || 0) / 100;
-    const ticketQuantity = parseInt(quantity) || 1;
+//     const { userId, competitionId, orderId, quantity } = payment.metadata || {};
+//     const amount = (payment.amount?.value || 0) / 100;
+//     const ticketQuantity = parseInt(quantity) || 1;
 
-    if (!userId || !orderId) {
-      return res.status(400).json({ message: "Invalid payment metadata" });
-    }
+//     if (!userId || !orderId) {
+//       return res.status(400).json({ message: "Invalid payment metadata" });
+//     }
 
-    console.log(`🎫 Creating ${ticketQuantity} tickets for order ${orderId}`);
+//     console.log(`🎫 Creating ${ticketQuantity} tickets for order ${orderId}`);
 
-    // Update order status
-    await storage.updateOrderStatus(orderId, "completed");
+//     // Update order status
+//     await storage.updateOrderStatus(orderId, "completed");
 
-    // Record transaction
-    await storage.createTransaction({
-      userId,
-      type: "purchase",
-      amount: amount.toString(),
-      description: `Cashflows ticket purchase for ${competitionId} - ${ticketQuantity} tickets`,
-    });
+//     // Record transaction
+//     await storage.createTransaction({
+//       userId,
+//       type: "purchase",
+//       amount: amount.toString(),
+//       description: `Cashflows ticket purchase for ${competitionId} - ${ticketQuantity} tickets`,
+//     });
 
-    // Create tickets
-    const ticketPromises = [];
-    for (let i = 0; i < ticketQuantity; i++) {
-      ticketPromises.push(
-        storage.createTicket({
-          userId,
-          competitionId,
-          ticketNumber: nanoid(8).toUpperCase(),
-        })
-      );
-    }
+//     // Create tickets
+//     const ticketPromises = [];
+//     for (let i = 0; i < ticketQuantity; i++) {
+//       ticketPromises.push(
+//         storage.createTicket({
+//           userId,
+//           competitionId,
+//           ticketNumber: nanoid(8).toUpperCase(),
+//         })
+//       );
+//     }
 
-    await Promise.all(ticketPromises);
+//     await Promise.all(ticketPromises);
 
-    res.json({ 
-      success: true, 
-      competitionId, 
-      orderId,
-      ticketsCreated: ticketQuantity 
-    });
-  } catch (error) {
-    console.error("Error confirming ticket payment:", error);
-    res.status(500).json({ message: "Failed to confirm payment" });
-  }
-});
+//     res.json({ 
+//       success: true, 
+//       competitionId, 
+//       orderId,
+//       ticketsCreated: ticketQuantity 
+//     });
+//   } catch (error) {
+//     console.error("Error confirming ticket payment:", error);
+//     res.status(500).json({ message: "Failed to confirm payment" });
+//   }
+// });
 
 // Add webhook handler for Cashflows notifications
 app.post("/api/cashflows/webhook", async (req, res) => {
@@ -1191,18 +1191,61 @@ app.get("/api/scratch-order/:orderId", isAuthenticated, async (req: any, res) =>
   // Payment confirmation webhook
 app.post("/api/payment-success/competition", isAuthenticated, async (req: any, res) => {
   try {
-    const { orderId, paymentIntentId } = req.body;
+    console.log("🟢 /api/payment-success/competition called");
+    console.log("🟢 Request body:", req.body);
+
+    const { sessionId, orderId } = req.body;
     const userId = req.user.id;
 
-    const order = await storage.getOrder(orderId);
-    if (!order || order.userId !== userId) {
-      return res.status(404).json({ message: "Order not found" });
+    if (!sessionId || !orderId) {
+      console.warn("⚠️ Missing sessionId or orderId");
+      return res.status(400).json({ message: "Missing sessionId or orderId" });
     }
 
-    // Update order status
-    await storage.updateOrderStatus(orderId, "completed");
+    console.log("🔍 Checking payment status for sessionId:", sessionId);
+    
+    const payment = await cashflows.getPaymentStatus(sessionId);
+    console.log("🔍 Raw Cashflows response:", JSON.stringify(payment, null, 2));
 
-    // Create tickets
+    // ✅ Safely resolve paymentStatus
+    const status =
+      payment?.data?.paymentStatus || 
+      payment?.data?.data?.paymentStatus ||
+      payment?.paymentStatus;
+
+    console.log("🔍 Resolved paymentStatus:", status);
+
+    if (status !== "Paid") {
+      console.warn("❌ Payment not completed yet");
+      return res.status(400).json({ 
+        message: `Payment not completed yet. Status: ${status}`,
+        paymentData: payment
+      });
+    }
+
+    // ✅ Safely resolve metadata
+    const metadata =
+      payment?.data?.metadata ||
+      payment?.data?.data?.metadata ||
+      payment?.metadata;
+
+    console.log("🔍 Resolved metadata:", metadata);
+
+    const fetchedOrderId = metadata?.orderId || orderId;
+    console.log("🔍 Using orderId:", fetchedOrderId);
+
+    const order = await storage.getOrder(fetchedOrderId);
+    console.log("🔍 Fetched order:", order);
+
+    if (!order || order.userId !== userId) {
+      console.warn("⚠️ Order not found or invalid user");
+      return res.status(404).json({ message: "Order not found or invalid user" });
+    }
+
+    console.log("🔄 Updating order status to 'completed'");
+    await storage.updateOrderStatus(fetchedOrderId, "completed");
+
+    console.log("🎟 Creating tickets...");
     const tickets = [];
     for (let i = 0; i < order.quantity; i++) {
       const ticketNumber = nanoid(8).toUpperCase();
@@ -1210,33 +1253,88 @@ app.post("/api/payment-success/competition", isAuthenticated, async (req: any, r
         userId,
         competitionId: order.competitionId,
         ticketNumber,
-        isWinner: false, // This will be determined by game logic
+        isWinner: false,
       });
       tickets.push(ticket);
+      console.log(`🎫 Ticket created: ${ticketNumber}`);
     }
 
-    // Update competition sold tickets
-    await storage.updateCompetitionSoldTickets(
-      order.competitionId,
-      order.quantity
-    );
+    console.log("🔄 Updating competition sold tickets:", order.quantity);
+    await storage.updateCompetitionSoldTickets(order.competitionId, order.quantity);
 
-    // Create transaction record
+    // ✅ GET COMPETITION TYPE AND CREATE PROPER DESCRIPTION
+    const competition = await storage.getCompetition(order.competitionId);
+    const competitionType = competition?.type;
+    
+    let transactionDescription = `Purchased ${order.quantity} ticket(s)`;
+    let transactionAmount = "";
+    
+    // ✅ CHECK IF PURCHASE WAS WITH RINGTONE POINTS OR CASH
+    if (order.pointsAmount && parseFloat(order.pointsAmount) > 0) {
+      // This is a Ringtone Points purchase
+      const pointsUsed = parseFloat(order.pointsAmount);
+      
+      if (competitionType) {
+        switch (competitionType) {
+          case 'spin':
+            transactionDescription = `Purchased ${order.quantity} Spin${order.quantity > 1 ? 's' : ''}`;
+            break;
+          case 'scratch':
+            transactionDescription = `Purchased ${order.quantity} Scratch Card${order.quantity > 1 ? 's' : ''}`;
+            break;
+          case 'instant':
+            transactionDescription = `Purchased ${order.quantity} Competition${order.quantity > 1 ? 's' : ''}`;
+            break;
+          default:
+            transactionDescription = `Purchased ${order.quantity} ticket(s)`;
+        }
+      }
+      // For Ringtone Points, store the amount as negative points
+      transactionAmount = `-${pointsUsed}`;
+    } else {
+      // This is a cash purchase
+      if (competitionType) {
+        switch (competitionType) {
+          case 'spin':
+            transactionDescription = `Purchased ${order.quantity} Spin${order.quantity > 1 ? 's' : ''}`;
+            break;
+          case 'scratch':
+            transactionDescription = `Purchased ${order.quantity} Scratch Card${order.quantity > 1 ? 's' : ''}`;
+            break;
+          case 'instant':
+            transactionDescription = `Purchased ${order.quantity} Competition${order.quantity > 1 ? 's' : ''}`;
+            break;
+          default:
+            transactionDescription = `Purchased ${order.quantity} ticket(s)`;
+        }
+      }
+      // For cash, store the amount as negative monetary value
+      transactionAmount = `-${order.totalAmount}`;
+    }
+
+    console.log("💰 Creating transaction record with description:", transactionDescription);
     await storage.createTransaction({
       userId,
       type: "purchase",
-      amount: `-${order.totalAmount}`,
-      description: `Purchased ${order.quantity} ticket(s)`,
-      orderId,
+      amount: transactionAmount, // ✅ This will be either points or cash amount
+      description: transactionDescription,
+      orderId: fetchedOrderId,
     });
 
-    res.json({ success: true, tickets });
-  } catch (error) {
-    console.error("Error confirming payment:", error);
-    res.status(500).json({ message: "Failed to confirm payment" });
+    console.log("✅ Payment confirmed and tickets issued successfully");
+    res.json({ 
+      success: true, 
+      tickets, 
+      competitionId: order.competitionId,
+      competitionType, 
+      orderId: order.id,
+    });
+
+  } catch (error: any) {
+    console.error("❌ Error confirming competition payment:", error);
+    res.status(500).json({ message: "Failed to confirm payment", error: error.message });
   }
 });
-
   // Game routes
 // app.post("/api/play-spin-wheel", isAuthenticated, async (req: any, res) => {
 //   try {
@@ -1595,34 +1693,58 @@ app.post("/api/wallet/confirm-topup", isAuthenticated, async (req: any, res) => 
     const { sessionId } = req.body;
     if (!sessionId) return res.status(400).json({ message: "Missing sessionId" });
 
+    console.log("🔍 Checking payment status for:", sessionId);
+
     const payment = await cashflows.getPaymentStatus(sessionId);
-    const status =
-      payment?.status || payment?.checkout?.status || payment?.data?.status;
+    console.log("🔍 Payment response received");
 
-    if (status === "SUCCESS" || status === "COMPLETED") {
-      const userId = payment?.metadata?.userId;
-      const amount = parseFloat(payment?.amountToCollect || "0");
+    // ✅ CORRECT: Cashflows uses "Paid" status, not "SUCCESS" or "COMPLETED"
+    const status = payment?.data?.paymentStatus;
+    console.log("🔍 Payment status:", status);
 
+    if (status === "Paid") {
+      console.log("✅ Payment is Paid, processing...");
+      
+      // ✅ Get amount from correct field
+      const amount = parseFloat(payment?.data?.amountToCollect || "0");
+      
+      // ✅ Use current user ID since metadata might not be populated
+      const userId = req.user.id;
+      
+      console.log("💰 Processing payment - Amount:", amount, "User:", userId);
+
+      // Update user balance
       const user = await storage.getUser(userId);
-      const newBalance = (
-        parseFloat(user?.balance || "0") + amount
-      ).toString();
+      const newBalance = (parseFloat(user?.balance || "0") + amount).toString();
       await storage.updateUserBalance(userId, newBalance);
 
+      // Create transaction record
       await storage.createTransaction({
         userId,
         type: "deposit",
         amount: amount.toString(),
-        description: `Cashflows top-up of £${amount}`,
+        description: `Cashflows top-up of £${amount.toFixed(2)}`,
       });
 
-      return res.json({ success: true });
+      console.log("✅ Payment confirmed successfully");
+      return res.json({ 
+        success: true,
+        message: "Payment confirmed successfully"
+      });
+    } else {
+      console.log("❌ Payment not completed. Status:", status);
+      res.status(400).json({ 
+        message: `Payment not completed yet. Status: ${status}`,
+        status: status 
+      });
     }
 
-    res.status(400).json({ message: "Payment not completed yet" });
-  } catch (error) {
-    console.error("Error confirming Cashflows top-up:", error);
-    res.status(500).json({ message: "Failed to confirm top-up" });
+  } catch (error : any) {
+    console.error("❌ Error confirming Cashflows top-up:", error);
+    res.status(500).json({ 
+      message: "Failed to confirm top-up",
+      error: error.message 
+    });
   }
 });
 

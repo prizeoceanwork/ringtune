@@ -426,13 +426,13 @@ const hasCompletedRef = useRef(false);
   {/* 🪄 Optional subtle overlay to blend edges */}
   <div className="absolute inset-0 bg-black/20"></div>
       <div className="relative z-10 p-4 sm:p-6 w-full max-w-4xl  ">
-        <div className="flex justify-center mb-4 sm:mb-5">
+        {/* <div className="flex justify-center mb-4 sm:mb-5">
           {scratchTicketCount !== undefined && (
             <div className="bg-yellow-400 w-fit text-black px-3 py-2 rounded-sm text-sm font-bold shadow-md z-20">
               Available Scratche{scratchTicketCount !== 1 ? "s" : ""}: {scratchTicketCount} 
             </div>
           )}
-        </div>
+        </div> */}
         
         <div className="text-center mb-4 sm:mb-6">
           <h2 className="text-2xl sm:text-3xl font-bold mb-2">Scratch & Match</h2>

@@ -41,7 +41,11 @@ import SpinGamePage from "./pages/spinGamePage";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
- 
+  
+  useEffect(()=>{
+    window.scrollTo(0,0);
+  })
+
   return (
     <Switch>
       {/* Public routes - always available */}

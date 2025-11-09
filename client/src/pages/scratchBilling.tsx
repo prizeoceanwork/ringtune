@@ -59,6 +59,8 @@ const ScratchBilling = () => {
 
     queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     queryClient.invalidateQueries({ queryKey: ["/api/scratch-order", orderId] });
+    queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
+
 
     const competitionId =
       data.competitionId || order?.competitionId; // ✅ fallback to either

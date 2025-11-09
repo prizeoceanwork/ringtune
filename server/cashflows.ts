@@ -79,11 +79,13 @@ async createCompetitionPaymentSession(amount: number, metadata: any) {
     amountToCollect: amountString,
     currency: "GBP",
     parameters: {
-      returnUrlSuccess: `${process.env.CLIENT_URL}/success/competition`,
-      returnUrlFailed: `${process.env.CLIENT_URL}/failed`,
-      returnUrlCancelled: `${process.env.CLIENT_URL}/cancelled`,
+      returnUrlSuccess: `${process.env.CLIENT_URL}/success/competition?orderId=${metadata.orderId}`,
+      returnUrlFailed: `${process.env.CLIENT_URL}/failed?orderId=${metadata.orderId}`,
+      returnUrlCancelled: `${process.env.CLIENT_URL}/cancelled?orderId=${metadata.orderId}`,
     },
-    metadata,
+    metadata: {
+      ...metadata,
+    },
   };
 
   const jsonBody = JSON.stringify(payload);
@@ -124,32 +126,37 @@ async createCompetitionPaymentSession(amount: number, metadata: any) {
 }
 
   async getPaymentStatus(sessionId: string) {
-    const url = `${this.config.baseUrl}/payment-jobs/${sessionId}`;
+  const url = `${this.config.baseUrl}/payment-jobs/${sessionId}`;
 
-    // For GET, Cashflows requires only the API key hashed
-    const hash = crypto
-      .createHash("sha512")
-      .update(this.config.apiKey, "utf8")
-      .digest("hex")
-      .toUpperCase();
+  // For GET, Cashflows requires only the API key hashed
+  const hash = crypto
+    .createHash("sha512")
+    .update(this.config.apiKey, "utf8")
+    .digest("hex")
+    .toUpperCase();
 
-    const headers = {
-      ConfigurationId: this.config.configurationId,
-      Hash: hash,
-      "Content-Type": "application/json",
-    };
+  const headers = {
+    ConfigurationId: this.config.configurationId,
+    Hash: hash,
+    "Content-Type": "application/json",
+  };
 
-    try {
-      const res = await axios.get(url, { headers });
-      return res.data;
-    } catch (err: any) {
-      console.error(
-        "❌ Failed to fetch payment status:",
-        err.response?.data || err.message
-      );
-      throw err;
-    }
+  console.log("🔍 Getting payment status for:", sessionId);
+  console.log("🔍 URL:", url);
+  console.log("🔍 Headers:", { ConfigurationId: this.config.configurationId, Hash: "***" });
+
+  try {
+    const res = await axios.get(url, { headers });
+    console.log("🔍 Payment status response:", res.data);
+    return res.data;
+  } catch (err: any) {
+    console.error(
+      "❌ Failed to fetch payment status:",
+      err.response?.data || err.message
+    );
+    throw err;
   }
+}
 }
 
 // ✅ Use the Hosted endpoint
